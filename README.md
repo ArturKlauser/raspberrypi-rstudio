@@ -26,12 +26,12 @@ natively and in cross-build. You'll also need at least 1 GB of RAM on the
 build machine, but more is better, which precludes native build on smaller
 Raspberry Pis with less memory. In addition make sure to configure at least
 1 GB of swap space. Under Raspbian you can configure swap space like this:
-  * in =/etc/dphys-swapfile= set CONF_SWAPSIZE=1024 (default is 100)
-  * run =sudo service dphys-swapfile restart=
+  * in `/etc/dphys-swapfile` set CONF_SWAPSIZE=1024 (default is 100)
+  * run `sudo service dphys-swapfile restart`
   * once the build is done and you're happy with the result you can set
     the swap space back to the default 100 MB with:
-    * in =/etc/dphys-swapfile= set CONF_SWAPSIZE=100
-    * =sudo service dphys-swapfile restart=
+    * in `/etc/dphys-swapfile` set CONF_SWAPSIZE=100
+    * `sudo service dphys-swapfile restart`
 
 To build run the following command:
 ```
@@ -40,13 +40,13 @@ docker build -f Dockerfile.build -t raspberrypi-rstudio-build .
 
 To reduce the memory pressure the build uses only a parallelism of 2 by
 default. If you are running out of memory you can try reducing that to 1
-by adding =--build-arg BUILD_PARALLELISM=1= to the docker build command
+by adding `--build-arg BUILD_PARALLELISM=1` to the docker build command
 line. On the other hand, if you are cross-building on a host with sufficient
 memory you can increase this, e.g. on a host with >= 8 GB of RAM add
-=--build-arg BUILD_PARALLELISM=4= to the docker build command line.
+`--build-arg BUILD_PARALLELISM=4` to the docker build command line.
 
 Once the build is done the Debian packages are left in the built docker
-image under the path =/home/pi/Downloads/rstudio/build/\*.deb=
+image under the path `/home/pi/Downloads/rstudio/build/\*.deb`
 
 ## Building the RStudio Server Runtime Image
 Use Dockerfile.server to create the docker image that has the RStudio Server
@@ -76,19 +76,19 @@ RStudio server on your Raspberry Pi simply with:
 ```
 docker run --rm --name rserver -v $PWD/work:/home/rstudio -p 8787:8787 -d raspberrypi-rstudio-server
 ```
-The rstudio-server will start in the docker container named =rserver= and
+The rstudio-server will start in the docker container named `rserver` and
 start to listen on its default port 8787. You now simply point your web
-browser to =http://<your_raspberry_pi>:8787= where you will be greeted by a
-login screen.  The image is set up with a default user name of =rstudio= and
-password of =raspberry=. You can override those at image build time by
-adding =--build-arg USER=foo= =--build-arg PASSWORD=bar= to the command
+browser to `http://<your_raspberry_pi>:8787` where you will be greeted by a
+login screen.  The image is set up with a default user name of `rstudio` and
+password of `raspberry`. You can override those at image build time by
+adding `--build-arg USER=foo` `--build-arg PASSWORD=bar` to the command
 line. After entering those credentials you will see the RStudio development
 environment in your web browser.
 
 Most likely you will want to keep the results of your work around across
 container restarts. For this, the server image is expected to be used with a
-working directory from your host (=$PWD/work= above) mounted into the
-=/home/rstudio= directory of the =rserver= container.
+working directory from your host (`$PWD/work` above) mounted into the
+`/home/rstudio` directory of the `rserver` container.
 
 ## Getting the .deb Package Files
 If what you want to do is not running RStudio in a Docker container but
@@ -105,8 +105,8 @@ docker rm extract
 ## Installing RStudio Natively on Your Raspberry Pi
 Once you have extracted the .deb images from the build container in the
 steps above you're ready to install them natively on your Raspberry Pi. To
-make sure the dependencies are also properly installed we'll use =apt=
-instead of =dpkg= and we also update the package list first:
+make sure the dependencies are also properly installed we'll use `apt`
+instead of `dpkg` and we also update the package list first:
 ```
 sudo apt-get update
 sudo apt install ./rstudio-server-1.1.463-1~r2r_armhf.deb # installs rstudio-server
