@@ -29,7 +29,7 @@ Raspberry Pis with less memory. In addition make sure to configure at least
   * in `/etc/dphys-swapfile` set CONF_SWAPSIZE=1024 (default is 100)
   * run `sudo service dphys-swapfile restart`
   * once the build is done and you're happy with the result you can set
-    the swap space back to the default 100 MB with:
+    the swap space back to the default 100 MB:
     * in `/etc/dphys-swapfile` set CONF_SWAPSIZE=100
     * `sudo service dphys-swapfile restart`
 
@@ -46,7 +46,7 @@ memory you can increase this, e.g. on a host with >= 8 GB of RAM add
 `--build-arg BUILD_PARALLELISM=4` to the docker build command line.
 
 Once the build is done the Debian packages are left in the built docker
-image under the path `/home/pi/Downloads/rstudio/build/\*.deb`
+image under the path `/home/pi/Downloads/rstudio/build/*.deb`
 
 ## Building the RStudio Server Runtime Image
 Use Dockerfile.server to create the docker image that has the RStudio Server
@@ -66,9 +66,10 @@ docker build -f Dockerfile.server --target install-full -t raspberrypi-rstudio-s
 ```
 This is also the default if you don't specify a target. The full runtime
 also has the necessary system and R packages installed to support working
-with .Rmd files as well as source code version control. It also contains a
-compile environment for C, C++ and Fortran which is often used when you
-install additional R source packages from CRAN in your R user environment.
+with .Rmd files including latex for generating PDF, as well as source code
+version control. It also contains compile environments for C, C++ and Fortran
+which are often used when you install additional R source packages from CRAN
+in your R user environment.
 
 ## Running RStudio Server
 Once you have the raspberrypi-rstudio-server created you can start an
@@ -77,7 +78,7 @@ RStudio server on your Raspberry Pi simply with:
 docker run --rm --name rserver -v $PWD/work:/home/rstudio -p 8787:8787 -d raspberrypi-rstudio-server
 ```
 The rstudio-server will start in the docker container named `rserver` and
-start to listen on its default port 8787. You now simply point your web
+starts to listen on its default port 8787. You now simply point your web
 browser to `http://<your_raspberry_pi>:8787` where you will be greeted by a
 login screen.  The image is set up with a default user name of `rstudio` and
 password of `raspberry`. You can override those at image build time by
@@ -92,7 +93,7 @@ working directory from your host (`$PWD/work` above) mounted into the
 
 ## Getting the .deb Package Files
 If what you want to do is not running RStudio in a Docker container but
-installing them natively on your Raspberry Pi you can do that too. For this
+installing it natively on your Raspberry Pi you can do that too. For this
 you need to extract the .deb package files from the build image. It's a
 little cumbersome, but not too much so:
 ```
@@ -114,7 +115,15 @@ sudo apt install ./rstudio--1.1.463-1~r2r_armhf.deb  # installs rstudio-desktop
 ```
 That's all. The Debian installation scripts have already installed the
 scripts that make sure rstudio-server is started and keeps running whenever
-your Raspberry Pi boots up. As for RStudio Desktop, you can find it on your
-desktop in the applications menu under Programming -> RStudio.
+your Raspberry Pi boots up. If you point your web browser to
+`http://<your_raspberry_pi>:8787` you're in the game. Note, however, that
+you can't run RStudio Server both natively and in a docker container on
+the same machine at the same time and have them both use the same port
+8787. If you already have a native RStudio running and using port 8787
+you can map the container version to a different port, e.g. 8788, by
+using `-p 8788:8787` on the docker command line instead.
+
+As for RStudio Desktop, you can find it on your desktop in the applications
+menu under Programming -> RStudio.
 
 Happy developing!
