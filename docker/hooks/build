@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "Start building at $(date -u +'%Y-%m-%dT%H:%M:%SZ') ..."
+env
+
+docker build \
+  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
+  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+  --build-arg BUILD_PARALLELISM=1 \
+  -t ${IMAGE_NAME} \
+  -f ${DOCKERFILE_PATH} \
+  .
+
+echo "Done building at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"

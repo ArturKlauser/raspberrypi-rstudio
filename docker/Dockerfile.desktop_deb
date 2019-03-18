@@ -55,7 +55,7 @@ RUN set -x \
 # build environment, build it only to stage --target=build_env
 FROM scratch as package
 
-COPY --from build_env /home/pi/Downloads/rstudio/build/rstudio--${RSTUDIO_BUILD_TAG}_armhf.deb /
+COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio--${RSTUDIO_BUILD_TAG}_armhf.deb /
 
 # Timestamp for build log.
 RUN  date -u +'%Y-%m-%dT%H:%M:%SZ'
