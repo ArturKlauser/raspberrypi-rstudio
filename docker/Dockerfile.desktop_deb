@@ -67,15 +67,24 @@ RUN set -x \
     && mv Makefile.orig Makefile
 # The product of this build is: rstudio--${BUILD_TAG}_armhf.deb
 
+# Comment out next line for native build.
+RUN [ "cross-build-end" ]
+
 # Extract only the finished Debian package and leave it in an empty docker
 # image to reduce image size. If you want to capture the package in its
 # build environment, build it only to stage --target=build_env
 FROM scratch as package
 
-COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio--${BUILD_TAG}_armhf.deb /
+# ARGs need to be redefined in every build stage to be accessible.
+ARG VERSION_MAJOR
+ARG VERSION_MINOR
+ARG VERSION_PATCH
+ARG PACKAGE_RELEASE
+# Automatically computed variables - don't override on command line.
+ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
-# Comment out next line for native build.
-RUN [ "cross-build-end" ]
+COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio--${BUILD_TAG}_armhf.deb /
 
 # Label the image. Override those ARGs on the command line:
 # docker build ... \

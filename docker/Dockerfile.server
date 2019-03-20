@@ -37,6 +37,11 @@ FROM arturklauser/raspberrypi-rstudio-server-deb as build
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
 
+#===== Build stage: install-minimal. =====
+
+# See https://www.balena.io/docs/reference/base-images/base-images/
+FROM balenalib/raspberrypi3-debian:stretch-run as install-minimal
+
 # Define RStudio source code version to use and the package release tag.
 # Override these ARGs on the command line:
 # docker build ... \
@@ -50,12 +55,7 @@ ARG PACKAGE_RELEASE
 ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
 ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
-#===== Build stage: install-minimal. =====
-
-# See https://www.balena.io/docs/reference/base-images/base-images/
-FROM balenalib/raspberrypi3-debian:stretch-run as install-minimal
-
-COPY --from=build /studio-server-1.1.463-1~r2r_armhf.deb .
+COPY --from=build /rstudio-server-${BUILD_TAG}_armhf.deb .
 
 # User and password for rstudio-server web login.
 ARG USER=rstudio
@@ -63,9 +63,9 @@ ARG PASSWORD=raspberry
 RUN apt-get update \
     && apt-get install -y r-base locales \
     && localedef -f UTF-8 -i en_US en_US.UTF-8 \
-    && apt install ./rstudio-server-1.1.463-1~r2r_armhf.deb \
+    && apt install ./rstudio-server-${BUILD_TAG}_armhf.deb \
     && apt-get clean \
-    && rm ./rstudio-server-1.1.463-1~r2r_armhf.deb \
+    && rm ./rstudio-server-${BUILD_TAG}_armhf.deb \
     && useradd -m -p $(perl -e "print crypt('"${PASSWORD}"','pi');") ${USER}
 
 ENV LANG=en_US.UTF-8 \
