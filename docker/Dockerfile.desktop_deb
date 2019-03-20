@@ -22,8 +22,31 @@ FROM arturklauser/raspberrypi-rstudio-build-env as build_env
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
 
-# Timestamp for build log.
-RUN  date -u +'%Y-%m-%dT%H:%M:%SZ'
+# Define RStudio source code version to use and the package release tag.
+# Override these ARGs on the command line:
+# docker build ... \
+#   --build-arg VERSION_MAJOR=123 ...
+ARG VERSION_MAJOR
+ARG VERSION_MINOR
+ARG VERSION_PATCH
+ARG PACKAGE_RELEASE
+
+# Label the image. Override those ARGs on the command line:
+# docker build ... \
+#  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
+#  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
+ARG VCS_REF
+ARG BUILD_DATE
+LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
+LABEL maintainer='Artur.Klauser@computer.org'
+LABEL url='https://rstudio.com/'
+LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
+LABEL vcs-ref=${VCS_REF}
+LABEL build-date=${BUILD_DATE}
+
+# Automatically computed variables - don't override on command line.
+ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
 # Build only with parallelism 2 - gwtc is a memory hog. If you still run out
 # of memory override this to 1. If you cross-build on an x86 host with at
@@ -57,25 +80,18 @@ FROM scratch as package
 
 COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio--${RSTUDIO_BUILD_TAG}_armhf.deb /
 
-# Timestamp for build log.
-RUN  date -u +'%Y-%m-%dT%H:%M:%SZ'
-
 # Comment out next line for native build.
 RUN [ "cross-build-end" ]
 
-# Label the image.
+# Label the image. Override those ARGs on the command line:
 # docker build ... \
 #  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
 #  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
-ARG VCS_REF=${RSTUDIO_VCS_REF:-}
-ARG BUILD_DATE=${RSTUDIO_BUILD_DATE:-}
-
-ENV RSTUDIO_VCS_REF=${VCS_REF}
-ENV RSTUDIO_BUILD_DATE=${BUILD_DATE}
-
-LABEL description='RStudio Desktop Debian Package for Raspberry Pi.'
+ARG VCS_REF
+ARG BUILD_DATE
+LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
 LABEL maintainer='Artur.Klauser@computer.org'
 LABEL url='https://rstudio.com/'
 LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
-LABEL vcs-ref=${RSTUDIO_VCS_REF}
-LABEL build-date=${RSTUDIO_BUILD_DATE}
+LABEL vcs-ref=${VCS_REF}
+LABEL build-date=${BUILD_DATE}

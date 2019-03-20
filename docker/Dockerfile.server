@@ -37,8 +37,31 @@ FROM arturklauser/raspberrypi-rstudio-server-deb as build
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
 
-# Timestamp for build log.
-RUN  date -u +'%Y-%m-%dT%H:%M:%SZ'
+# Define RStudio source code version to use and the package release tag.
+# Override these ARGs on the command line:
+# docker build ... \
+#   --build-arg VERSION_MAJOR=123 ...
+ARG VERSION_MAJOR
+ARG VERSION_MINOR
+ARG VERSION_PATCH
+ARG PACKAGE_RELEASE
+
+# Label the image. Override those ARGs on the command line:
+# docker build ... \
+#  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
+#  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
+ARG VCS_REF
+ARG BUILD_DATE
+LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
+LABEL maintainer='Artur.Klauser@computer.org'
+LABEL url='https://rstudio.com/'
+LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
+LABEL vcs-ref=${VCS_REF}
+LABEL build-date=${BUILD_DATE}
+
+# Automatically computed variables - don't override on command line.
+ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
 #===== Build stage: install-minimal. =====
 
@@ -66,10 +89,6 @@ EXPOSE 8787
 
 CMD rstudio-server start; while true; do sleep 10000; done
 
-# Timestamp for build log.
-RUN  date -u +'%Y-%m-%dT%H:%M:%SZ'
-
-# Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
 RUN [ "cross-build-end" ]
 
@@ -77,7 +96,6 @@ RUN [ "cross-build-end" ]
 
 FROM install-minimal as install-full
 
-# Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
 
@@ -146,25 +164,18 @@ RUN set -x \
     && apt-get install -y --install-recommends git subversion \
     && apt-get clean
 
-# Timestamp for build log.
-RUN  date -u +'%Y-%m-%dT%H:%M:%SZ'
-
 # Comment out next line for native build.
 RUN [ "cross-build-end" ]
 
-# Label the image.
+# Label the image. Override those ARGs on the command line:
 # docker build ... \
 #  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
 #  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
-ARG VCS_REF=${RSTUDIO_VCS_REF:-}
-ARG BUILD_DATE=${RSTUDIO_BUILD_DATE:-}
-
-ENV RSTUDIO_VCS_REF=${VCS_REF}
-ENV RSTUDIO_BUILD_DATE=${BUILD_DATE}
-
-LABEL description='RStudio Server Runtime Environment for Raspberry Pi.'
+ARG VCS_REF
+ARG BUILD_DATE
+LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
 LABEL maintainer='Artur.Klauser@computer.org'
 LABEL url='https://rstudio.com/'
 LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
-LABEL vcs-ref=${RSTUDIO_VCS_REF}
-LABEL build-date=${RSTUDIO_BUILD_DATE}
+LABEL vcs-ref=${VCS_REF}
+LABEL build-date=${BUILD_DATE}
