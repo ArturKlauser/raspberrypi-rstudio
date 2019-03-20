@@ -46,19 +46,6 @@ ARG VERSION_MINOR
 ARG VERSION_PATCH
 ARG PACKAGE_RELEASE
 
-# Label the image. Override those ARGs on the command line:
-# docker build ... \
-#  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
-#  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
-ARG VCS_REF
-ARG BUILD_DATE
-LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
-LABEL maintainer='Artur.Klauser@computer.org'
-LABEL url='https://rstudio.com/'
-LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
-LABEL vcs-ref=${VCS_REF}
-LABEL build-date=${BUILD_DATE}
-
 # Automatically computed variables - don't override on command line.
 ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
 ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}

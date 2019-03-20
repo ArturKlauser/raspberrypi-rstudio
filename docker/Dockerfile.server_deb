@@ -31,19 +31,6 @@ ARG VERSION_MINOR
 ARG VERSION_PATCH
 ARG PACKAGE_RELEASE
 
-# Label the image. Override those ARGs on the command line:
-# docker build ... \
-#  --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
-#  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
-ARG VCS_REF
-ARG BUILD_DATE
-LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
-LABEL maintainer='Artur.Klauser@computer.org'
-LABEL url='https://rstudio.com/'
-LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
-LABEL vcs-ref=${VCS_REF}
-LABEL build-date=${BUILD_DATE}
-
 # Automatically computed variables - don't override on command line.
 ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
 ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
@@ -54,6 +41,13 @@ ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 ARG BUILD_PARALLELISM=2
 
 WORKDIR /home/pi/Downloads/rstudio/build
+
+# These environment variables are used by the build system to set the
+# version number built into the binaries and package names.
+ENV RSTUDIO_VERSION_MAJOR=${VERSION_MAJOR} \
+    RSTUDIO_VERSION_MINOR=${VERSION_MINOR} \
+    RSTUDIO_VERSION_PATCH=${VERSION_PATCH}
+
 RUN set -x \
     && cmake .. \
       -DRSTUDIO_TARGET=Server \
@@ -70,14 +64,14 @@ RUN set -x \
     && echo 'preinstall:' > Makefile \
     && cpack -G DEB \
     && mv Makefile.orig Makefile
-# The product of this build is: rstudio-server-${RSTUDIO_BUILD_TAG}_armhf.deb
+# The product of this build is: rstudio-server-${BUILD_TAG}_armhf.deb
 
 # Extract only the finished Debian package and leave it in an empty docker
 # image to reduce image size. If you want to capture the package in its
 # build environment, build it only to stage --target=build_env
 FROM scratch as package
 
-COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio-server-${RSTUDIO_BUILD_TAG}_armhf.deb /
+COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio-server-${BUILD_TAG}_armhf.deb /
 
 # Comment out next line for native build.
 RUN [ "cross-build-end" ]

@@ -1,11 +1,20 @@
 #!/bin/bash
 echo "Start building at $(date -u +'%Y-%m-%dT%H:%M:%SZ') ..."
-env
 
-docker build \
+# Define RStudio source code version to use and the package release tag.
+# As of 2019-03-20 v1.1.463 is the latest version 1.1 tag.
+VERSION_MAJOR=1
+VERSION_MINOR=1
+VERSION_PATCH=463
+PACKAGE_RELEASE='1~r2r'
+
+time docker build \
+  --build-arg VERSION_MAJOR="${VERSION_MAJOR}" \
+  --build-arg VERSION_MINOR="${VERSION_MINOR}" \
+  --build-arg VERSION_PATCH="${VERSION_PATCH}" \
+  --build-arg PACKAGE_RELEASE="${PACKAGE_RELEASE}" \
   --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
   --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-  --build-arg BUILD_PARALLELISM=1 \
   -t ${IMAGE_NAME} \
   -f ${DOCKERFILE_PATH} \
   .
