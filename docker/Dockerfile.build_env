@@ -107,7 +107,7 @@ RUN [ "cross-build-end" ]
 #  --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') ...
 ARG VCS_REF
 ARG BUILD_DATE
-LABEL description='Build environment for RStudio Server and Desktop on Raspberry Pi.'
+LABEL description='RStudio Build Environment for Raspberry Pi.'
 LABEL maintainer='Artur.Klauser@computer.org'
 LABEL url='https://rstudio.com/'
 LABEL vcs-url='https://github.com/ArturKlauser/raspberrypi-rstudio'
