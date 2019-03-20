@@ -33,14 +33,14 @@
 # Import image containing the built .deb package.
 FROM arturklauser/raspberrypi-rstudio-server-deb as build
 
-# Balenalib images for arm can be cross-built on x86.
-# Comment out next line for native build.
-RUN [ "cross-build-start" ]
-
 #===== Build stage: install-minimal. =====
 
 # See https://www.balena.io/docs/reference/base-images/base-images/
 FROM balenalib/raspberrypi3-debian:stretch-run as install-minimal
+
+# Balenalib images for arm can be cross-built on x86.
+# Comment out next line for native build.
+RUN [ "cross-build-start" ]
 
 # Define RStudio source code version to use and the package release tag.
 # Override these ARGs on the command line:
