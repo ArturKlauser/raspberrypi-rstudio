@@ -6,12 +6,16 @@ distribution. The work is split into several phases, each of which builds a
 separate docker image:
   1. Creating a build environment that contains all necessary tools to compile
      RStudio Server and Desktop and build the respective Debian packages.
+     * Dockerhub: [arturklauser/raspberrypi-rstudio-build-env](https://hub.docker.com/r/arturklauser/raspberrypi-rstudio-build-env)
   2. Creating the RStudio Server Debian package within the build environment
      from 1.
+     * Dockerhub: [arturklauser/raspberrypi-rstudio-server-deb](https://hub.docker.com/r/arturklauser/raspberrypi-rstudio-server-deb)
   3. Creating the RStudio Desktop Debian package within the build environment
      from 1.
+     * Dockerhub: [arturklauser/raspberrypi-rstudio-desktop-deb](https://hub.docker.com/r/arturklauser/raspberrypi-rstudio-desktop-deb)
   4. Creating an RStudio Server runtime environment from 2.
-
+     * Dockerhub: [arturklauser/raspberrypi-rstudio-server](https://hub.docker.com/r/arturklauser/raspberrypi-rstudio-server)
+     
 The docker images can be either created natively on a sufficiently potent
 Raspberry Pi (e.g. Raspberry Pi 3 with 1 GB of memory) or they can be created
 by cross-building on an x86 host. Due to the fabulous work of the folks at
@@ -127,6 +131,8 @@ similarly with:
 ```
 docker image save arturklauser/raspberrypi-rstudio-desktop-deb | tar xO --wildcards '*/layer.tar' | tar x
 ```
+Check the [releases](https://github.com/ArturKlauser/raspberrypi-rstudio/releases)
+if you just want to download some pre-built Debian packages.
 
 ## Installing RStudio Natively on Your Raspberry Pi
 Once you have extracted the .deb images from the build containers in the steps
