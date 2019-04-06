@@ -26,15 +26,15 @@ Makoto's excellent write-up of [RStudio installation on Raspberry
 Pi](http://herb.h.kobe-u.ac.jp/raspiinfo/rstudio_en.html).
 
 ## Building the Debian Packages
-Use Dockerfile.build_env to create the build environment in which the code for
-RStudio Server and Desktop is going to be compiled.  The build procedure has
-been adapted to the Raspbian environment (Debian v9 Stretch) using the native
-version of the Boost library and the native QT libraries. Once the build
-environment is created it is used by Dockerfile.server_deb and
-Dockerfile.desktop_deb to build the RStudio Server and Desktop Debian packages
-respectively.
+Use Dockerfile.build-env to create the build environment in which the code for
+RStudio Server and Desktop is going to be compiled. The build procedure has
+been adapted to the Raspbian environment using the native version of the Boost
+library and the native QT libraries. It has been tested on Debian 9 (Stretch)
+and  Debian 10 (Buster). Once the build environment is created, it is used by
+Dockerfile.server-deb and Dockerfile.desktop-deb to build the RStudio Server and
+Desktop Debian packages respectively.
 
-The build process is fairly lengthy. Expect several hours (4-8ish) both
+The build process is fairly lengthy. Expect several hours (5-10ish) both
 natively and in cross-build. You'll also need at least 1 GB of RAM on the build
 machine, but more is better, which precludes native build on smaller Raspberry
 Pis with less memory. In addition make sure to configure at least 1 GB of swap
@@ -49,8 +49,9 @@ space. Under Raspbian you can configure swap space like this:
 An attempt was made to have the build run on dockerhub autobuild, but its VMs
 take about 3 times longer than a native build on a Raspberry Pi 3 B+ and run
 into the 4 hour time limit imposed for autobuilds. Overcoming this would have
-required to split the Dockerfile.\*\_deb build files into 3 sequential builds
-each, which was not considered worthwhile.
+required to split the Dockerfile.\*\-deb build files into 3 sequential builds
+each, which was not considered worthwhile. So the infrastructure to hook into
+dockerhub autobuilds has been removed again from this repository.
 
 The Dockerfiles are set up for cross-build by default. To build natively, first
 comment out the cross-build commands:
@@ -58,20 +59,22 @@ comment out the cross-build commands:
 perl -i -pe 's/(.*cross-build-(start|end).*)/# $1/' docker/Dockerfile.*
 ```
 
-To build, run the hooks/build script:
+Since the Dockerfiles depend on a number of ARGs that must be passed in on the
+command line, the preferred way of building the images is to use the wrapper
+shell script `build.sh`.
+
+To build, run:
 ```
-cd docker
-IMAGE_NAME=arturklauser/raspberrypi-rstudio-build-env DOCKERFILE_PATH=Dockerfile.build_env hooks/build
-IMAGE_NAME=arturklauser/raspberrypi-rstudio-server-deb DOCKERFILE_PATH=Dockerfile.server_deb hooks/build
-IMAGE_NAME=arturklauser/raspberrypi-rstudio-desktop-deb DOCKERFILE_PATH=Dockerfile.desktop_deb hooks/build
+for stage in build-env server-deb desktop-deb; do
+  ./build.sh stretch "${stage}"
+done
 ```
 
 To reduce the memory pressure, the build uses only a parallelism of 2 by
 default. If you are running out of memory you can try reducing that to 1 by
-adding `--build-arg BUILD_PARALLELISM=1` to the docker build command line. On
-the other hand, if you are cross-building on a host with sufficient memory you
-can increase this, e.g. on a host with >= 8 GB of RAM add `--build-arg
-BUILD_PARALLELISM=4` to the docker build command line.
+changing it in the build.sh script. On the other hand, if you are cross-building
+on a host with sufficient memory you can increase this, e.g. on a host with >= 8
+GB of RAM you can use `BUILD_PARALLELISM=4`.
 
 Once the build of each Debian package is done, the build environment is
 jettisoned and the packages is copied into an empty container's root directory.
@@ -87,14 +90,14 @@ basic R programs in RStudio Server but doesn't have any extras installed. For
 this you would add the `--target install-minimal` to the docker build command.
 The default is to build a more fully featured runtime with:
 ```
-cd docker
-IMAGE_NAME=arturklauser/raspberrypi-rstudio-server DOCKERFILE_PATH=Dockerfile.server hooks/build
+./build.sh stretch server
 ```
 The full runtime also has the necessary system and R packages installed to
 support working with .Rmd files including latex for generating PDF, as well as
 source code version control. It also contains compile environments for C, C++
 and Fortran which are often used when you install additional R source packages
-from CRAN in your R user environment.
+from CRAN in your R user environment, as well as R packages for data cleaning,
+manipulation, and plotting.
 
 ## Running RStudio Server
 Once you have the raspberrypi-rstudio-server created you can start an RStudio
@@ -114,9 +117,12 @@ your web browser.
 Most likely you will want to keep the results of your work around across
 container restarts. For this, the server image is expected to be used with a
 working directory from your host (`$PWD/work` above) mounted into the home
-directory `/home/rstudio` of the user in the `rserver` container. If you have
-specified a different `USER` at build time, you have to adjust the `/home`
-directory accordingly.
+directory `/home/rstudio` of the user in the `rserver` container. Make sure that
+the directory on the host exists before you pass it into the docker container,
+otherwise container engine will probably create is as root which will give you
+permission problems when trying to create files in it from within the container.
+If you have specified a different `USER` at build time, you have to adjust the
+`/home` directory accordingly.
 
 ## Getting the .deb Package Files
 If what you want to do is not running RStudio in a Docker container but

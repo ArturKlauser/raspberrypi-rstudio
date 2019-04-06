@@ -3,69 +3,89 @@
 # This image can either be cross-built on an x86 host or built natively on a
 # Raspberry Pi3 B+ (RP3) with 1 GB of RAM.
 #
-# Run the build like so:
-#   docker build -t raspberrypi-rstudio-build-env -f Dockerfile.build_env .
-# This will create a build environment image that can be used for compiling
-# RStudio Server and Desktop Debian packages.
-#
 # Some of this work is based on the excellent write-up of RStudio installation at
 # http://herb.h.kobe-u.ac.jp/raspiinfo/rstudio_en.html
+#
+# Run the build with the build.sh script to make sure all required ARGs are
+# passed in. This will create a build environment image that can be used for
+# compiling RStudio Server and Desktop Debian packages.
+
+ARG DEBIAN_VERSION
+ARG VERSION_TAG
 
 # See https://www.balena.io/docs/reference/base-images/base-images/
-FROM balenalib/raspberrypi3-debian:stretch-build as build_env
+FROM balenalib/raspberrypi3-debian:${DEBIAN_VERSION}-build as build_env
 
 # Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
 
-# Define RStudio source code version to use and the package release tag.
-# Override these ARGs on the command line:
-# docker build ... \
-#   --build-arg VERSION_MAJOR=123 ...
+# Define Debian version, RStudio version to use and the package release tag.
+ARG DEBIAN_VERSION
 ARG VERSION_MAJOR
 ARG VERSION_MINOR
 ARG VERSION_PATCH
+ARG VERSION_TAG
 ARG PACKAGE_RELEASE
 
 # Automatically computed variables - don't override on command line.
-ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
 ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-      galternatives \
-      git \
-      openjdk-8-jdk \
-      pandoc \
-      pandoc-citeproc \
-      python-dev \
-      r-recommended
+#--- begin buster
+# Debian 10 (Buster) repositories are not signed yet, so override apt
+# security checks.
+RUN set -x; \
+    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+      perl -i -pe 's/^deb (\[([^\]]*)\](\s*))?/deb [trusted=yes$3$2] /' /etc/apt/sources.list; \
+    fi
+# Debian 10 (Buster) ca-certificates package misses all cert-hash links in
+# /etc/ssl/certs, causing SSL (e.g. curl https://...) to fail. Repopulate those
+# symlinks.
+RUN set -x; \
+    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+      update-ca-certificates --fresh; \
+    fi
+#--- end buster
 
-RUN mkdir -p /home/pi/Downloads
-WORKDIR /home/pi/Downloads
+# Upgrade base image.
+RUN set -x \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt autoremove
 
-# Get the RStudio sources. We only download the version of the code we need,
-# instead of HEAD. HEAD has dependencies that RaspberryPi3 Debian (v9 Stretch)
+# Install some basic build dependencies.
+RUN set -x \
+    && apt-get install -y \
+       galternatives \
+       git \
+       openjdk-8-jdk \
+       pandoc \
+       pandoc-citeproc \
+       python-dev \
+       r-recommended
+
+# Get the RStudio sources. We only make a shallow clone of the version we
+# need, instead of cloning the whole repository.
+# Note that HEAD has dependencies that RaspberryPi3 Debian 9 (Stretch)
 # currently doesn't satisfy, e.g. QT >= 5.10.
 RUN set -x \
-    && wget https://github.com/rstudio/rstudio/archive/v${VERSION_TAG}.tar.gz -O rstudio.tgz \
-    && tar xzf rstudio.tgz \
-    && rm rstudio.tgz \
-    && ln -s rstudio-${VERSION_TAG} rstudio
-# Alternatively, you could download the whole repository (~ 10x larger) and
-# check out the specific version tag.
-# RUN git clone https://github.com/rstudio/rstudio.git && \
-#     cd rstudio && \
-#     git checkout v${VERSION_TAG}
+    && mkdir -p /home/pi/Downloads \
+    && cd /home/pi/Downloads \
+    && git clone -b v${VERSION_TAG} --depth 1 https://github.com/rstudio/rstudio.git \
+    && ln -s rstudio rstudio-${VERSION_TAG}
 
 WORKDIR /home/pi/Downloads/rstudio/dependencies/linux
 # We're going to use the system version of the boost library (version
 # 1.62.0) instead of installing and building the RStudio version of boost
 # (version 1.63.0) which takes several hours of build time.
+# Comment out boost source installation.
 RUN perl -i -pe 's/(^.*install-boost$)/# \1/s' ../common/install-common
-RUN apt-get install libboost-all-dev
-# Script installs qt-sdk only for x86 but we need armhf, so skip qt install.
+# Install system boost.
+RUN apt-get install libboost1.62-all-dev
+# We use the system QT libraries instead of RSTudio's.
+# Script installs qt-sdk binaries for x86 but we need armhf, so skip it.
 RUN ./install-dependencies-debian --exclude-qt-sdk
-# Extra dependencies to build rstudio-desktop: use the system QT libraries instead.
+# Install system QT libraries.
 RUN apt-get install -y \
       libqt5opengl5-dev \
       libqt5sensors5-dev \
@@ -82,18 +102,36 @@ WORKDIR /home/pi/Downloads/rstudio
 # RStudio desktop .deb package. But bundling of system QT doesn't work due
 # to path differences and is unnecessary anyway.
 RUN sed -i -e 's#\(set(RSTUDIO_BUNDLE_QT\) TRUE#\1 FALSE#' src/cpp/desktop/CMakeLists.txt
-# Add the package dependencies to system QT libraries.
+
+#--- begin buster
+# We need libssl1.0.2. No other version will work since we're compiling against
+# that version and have a dynamic library depenency on it.
+RUN sed -i -e 's#libssl1.0.0 | libssl1.0.2 | libssl1.1, #libssl1.0.2, #' package/linux/CMakeLists.txt
+#--- end buster
+
+# For Desktop, add the package dependencies to system QT libraries.
+#--- begin stretch
 RUN sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libgstreamer0.10.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ")#' package/linux/CMakeLists.txt
+#--- end stretch
+#--- begin buster
+RUN sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "psmisc,.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ")#' package/linux/CMakeLists.txt
+#--- end buster
+
 # Add our own package release (aka. Debian revision number) to the .deb file.
 RUN sed -i -e 's#\(^.*\)-\(${PACKAGE_ARCHITECTURE}\)#set(CPACK_DEBIAN_PACKAGE_RELEASE "'${PACKAGE_RELEASE}'")\n\1-${CPACK_DEBIAN_PACKAGE_RELEASE}_\2#' package/linux/CMakeLists.txt
 
 # Constrain gwtc compiler to use a single worker - gwtc is a memory hog and
 # running multiple workers is getting too tight with 1 GB RAM + 1 GB swap.
 RUN perl -0777 -i -pe 's#(<arg value="-localWorkers"/>\s+<arg value=)"\d+"(/>)#\1"1"\2#s' src/gwt/build.xml
+# Reduce heap size to 600 MB to avoid vitual memory thrashing on our 1 GB
+# RAM RPi3. Below 600 MB we'd run the jvm out of heap space.
+RUN perl -i -pe 's#-Xmx1536#-Xmx600#' src/gwt/build.xml
 
+#--- begin stretch
 # Change "cmake_policy(SET CMP0020 OLD)" to "cmake_policy(SET CMP0043 OLD)"
 # to avoid a build time complaint.
 RUN sed -i -e s/CMP0020/CMP0043/g src/cpp/desktop/CMakeLists.txt
+#--- end stretch
 
 # We build in a separate directory.
 RUN mkdir build

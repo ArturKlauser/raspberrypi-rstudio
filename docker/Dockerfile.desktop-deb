@@ -11,28 +11,27 @@
 #     * In /etc/dphys-swapfile set CONF_SWAPSIZE=100
 #     * sudo service dphys-swapfile restart
 #
-# Run the build like so:
-#   docker build -t raspberrypi-rstudio-desktop-deb -f Dockerfile.desktop_deb .
-# This will build the RStudio Desktop Debian package and leave it in the root
-# directory.
+# Run the build with the build.sh script to make sure all required ARGs are
+# passed in. This will build the RStudio Desktop Debian package and leave
+# it in the root directory.
 
-FROM arturklauser/raspberrypi-rstudio-build-env as build_env
+ARG DEBIAN_VERSION
+ARG VERSION_TAG
+
+FROM arturklauser/raspberrypi-rstudio-build-env:${VERSION_TAG}-${DEBIAN_VERSION} as build_env
 
 # Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
 
 # Define RStudio source code version to use and the package release tag.
-# Override these ARGs on the command line:
-# docker build ... \
-#   --build-arg VERSION_MAJOR=123 ...
 ARG VERSION_MAJOR
 ARG VERSION_MINOR
 ARG VERSION_PATCH
+ARG VERSION_TAG
 ARG PACKAGE_RELEASE
 
 # Automatically computed variables - don't override on command line.
-ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
 ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
 # Build only with parallelism 2 - gwtc is a memory hog. If you still run out
@@ -48,15 +47,37 @@ ENV RSTUDIO_VERSION_MAJOR=${VERSION_MAJOR} \
     RSTUDIO_VERSION_MINOR=${VERSION_MINOR} \
     RSTUDIO_VERSION_PATCH=${VERSION_PATCH}
 
+# Build everything.
 RUN set -x \
+    # Configure the build.
     && cmake .. \
-      -DRSTUDIO_TARGET=Desktop \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DRSTUDIO_PACKAGE_BUILD=1 \
-      -DRSTUDIO_BOOST_VERSION=1.62.0 \
-      -DRSTUDIO_USE_SYSTEM_BOOST=1 \
-      -DQT_QMAKE_EXECUTABLE=/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake \
-    && make preinstall -j${BUILD_PARALLELISM}
+       -DRSTUDIO_TARGET=Desktop \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DRSTUDIO_PACKAGE_BUILD=1 \
+       #--- begin stretch
+       -DRSTUDIO_BOOST_VERSION=1.62.0 \
+       #--- end stretch
+       #--- begin buster
+       -DRSTUDIO_BOOST_REQUESTED_VERSION=1.62.0 \
+       #--- end buster
+       -DRSTUDIO_USE_SYSTEM_BOOST=1 \
+       -DQT_QMAKE_EXECUTABLE=/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake \
+    # Compile the C++ targets.
+    && make -j${BUILD_PARALLELISM} \
+       rstudio-core \
+       rstudio-core-hunspell \
+       rstudio-core-synctex \
+       rstudio-monitor \
+       rstudio-r \
+       diagnostics \
+       rstudio \
+       rsession \
+       rstudio-session-workers \
+       rpostback \
+    # Compile the rest, in particular java gwt_build, with parallelism 1 to
+    # reduce the memory pressure.
+    && make -j1 preinstall
+
 # Create the deb package. Unfortunately cpack wants to rerun the whole build,
 # so we'll work around that by giving it an empty build rule.
 # (There really should be a better way to avoid the rebuild.)
@@ -79,9 +100,10 @@ FROM scratch as package
 ARG VERSION_MAJOR
 ARG VERSION_MINOR
 ARG VERSION_PATCH
+ARG VERSION_TAG
 ARG PACKAGE_RELEASE
+
 # Automatically computed variables - don't override on command line.
-ARG VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
 ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
 COPY --from=build_env /home/pi/Downloads/rstudio/build/rstudio--${BUILD_TAG}_armhf.deb /
