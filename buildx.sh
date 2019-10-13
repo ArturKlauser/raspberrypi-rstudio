@@ -32,13 +32,13 @@ function main() {
     usage "Invalid number ($#) of command line arguments."
   fi
 
-# Define build environment.
+  # Define build environment.
   readonly DEBIAN_VERSION="$1"
   readonly BUILD_STAGE="$2"
 
   echo "Start building at $(timestamp) ..."
 
-# Define RStudio source code version to use and the package release tag.
+  # Define RStudio source code version to use and the package release tag.
   case "${DEBIAN_VERSION}" in
    'stretch')
       # As of 2019-04-06 v1.1.463 is the latest version 1.1 tag.
@@ -48,10 +48,10 @@ function main() {
       readonly PACKAGE_RELEASE='1~r2r'
       ;;
     'buster')
-      # As of 2019-04-06 v1.2.1335 is the latest version 1.2 tag.
+      # As of 2019-10-10 v1.2.5001 is the latest version 1.2 tag.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=2
-      readonly VERSION_PATCH=1335
+      readonly VERSION_PATCH=5001
       readonly PACKAGE_RELEASE='1~r2r'
       ;;
     *)
@@ -59,7 +59,7 @@ function main() {
       ;;
   esac
 
-# Define image tag and dockerfile depending on requested build stage.
+  # Define image tag and dockerfile depending on requested build stage.
   case "${BUILD_STAGE}" in
    'build-env' | 'server-deb' | 'desktop-deb' | 'server')
      readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
@@ -73,16 +73,16 @@ function main() {
   readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
   readonly BUILD_PARALLELISM=2
 
-# We comment out the cross-build lines since buildx has cross-build
-# integrated already.
-#  if [[ $(uname -m) =~ 'arm' ]]; then
+  # We comment out the cross-build lines since buildx has cross-build
+  # integrated already.
+  #  if [[ $(uname -m) =~ 'arm' ]]; then
     readonly CROSS_BUILD_FIX='s/^(.*cross-build-.*)/# $1/'
-#  else
-#    readonly CROSS_BUILD_FIX=''
-#  fi
+  #  else
+  #    readonly CROSS_BUILD_FIX=''
+  #  fi
 
-# Build the docker image.
-#      --load \
+  # Build the docker image.
+  #      --load \
 
   set -x
   time \
