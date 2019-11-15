@@ -25,6 +25,12 @@ Dockerfiles. The build phase commands are partially taken from Takahashi
 Makoto's excellent write-up of [RStudio installation on Raspberry
 Pi](http://herb.h.kobe-u.ac.jp/raspiinfo/rstudio_en.html).
 
+## Before You Begin
+Make sure that you have a working docker environment set up on the host machine
+that you are going to use for creating or using these docker images. Please
+refer to [Docker's Getting Started](https://docs.docker.com/get-started/)
+documentation for setting up docker.
+
 ## Building the Debian Packages
 Use Dockerfile.build-env to create the build environment in which the code for
 RStudio Server and Desktop is going to be compiled. The build procedure has
