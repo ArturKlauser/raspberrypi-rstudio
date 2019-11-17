@@ -31,6 +31,17 @@ that you are going to use for creating or using these docker images. Please
 refer to [Docker's Getting Started](https://docs.docker.com/get-started/)
 documentation for setting up docker.
 
+For docker newbies, note that docker stores the built and pulled images in its
+own image cache directories by their sha256 name. Don't expect to find them in
+the file system, e.g. your build directory, by image name. To list which images
+you have after the build use the docker command:
+```
+docker images
+```
+Please refer to the
+[docker documentation](https://docs.docker.com/engine/reference/commandline/docker/)
+for basic usage of docker.
+
 ## Building the Debian Packages
 Use Dockerfile.build-env to create the build environment in which the code for
 RStudio Server and Desktop is going to be compiled. The build procedure has
