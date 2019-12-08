@@ -45,13 +45,13 @@ function main() {
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=1
       readonly VERSION_PATCH=463
-      readonly PACKAGE_RELEASE='1~r2r'
+      readonly PACKAGE_RELEASE='2~r2r'
       ;;
     'buster')
-      # As of 2019-10-10 v1.2.5001 is the latest version 1.2 tag.
+      # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=2
-      readonly VERSION_PATCH=5001
+      readonly VERSION_PATCH=5019
       readonly PACKAGE_RELEASE='1~r2r'
       ;;
     *)
