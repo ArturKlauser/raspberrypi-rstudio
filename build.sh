@@ -12,12 +12,15 @@ function usage() {
   fi
   cat - >&2 << END_USAGE
 Usage: build.sh <debian-version> <build-stage>
-         debian-version: stretch ... Debian version 9
-                         buster .... Debian version 10
+         debian-version: stretch ..... Debian version 9
+                         buster ...... Debian version 10
+                         bullseye .... Debian version 11 (experimental)
          build-stage: build-env ..... build environment
                       server-deb .... server Debian package
                       desktop-deb ... desktop Debian package
                       server ........ server runtime environment
+                      experimental:
+                        build-env-bullseye
 END_USAGE
   exit 1
 }
@@ -54,6 +57,13 @@ function main() {
       readonly VERSION_PATCH=5019
       readonly PACKAGE_RELEASE='1~r2r'
       ;;
+    'bullseye')
+      # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
+      readonly VERSION_MAJOR=1
+      readonly VERSION_MINOR=2
+      readonly VERSION_PATCH=5019
+      readonly PACKAGE_RELEASE='1~r2r'
+      ;;
     *)
       usage "Unsupported Debian version '${DEBIAN_VERSION}'"
       ;;
@@ -63,6 +73,13 @@ function main() {
   case "${BUILD_STAGE}" in
    'build-env' | 'server-deb' | 'desktop-deb' | 'server')
      readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
+     readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
+     ;;
+   'build-env-bullseye')
+     readonly BUILD_STAGE_SHORT=$(echo "${BUILD_STAGE}" \
+       | sed -e 's/-bullseye//')
+     readonly \
+       IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE_SHORT}"
      readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
      ;;
     *)
