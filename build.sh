@@ -21,6 +21,9 @@ Usage: build.sh <debian-version> <build-stage>
                       server ........ server runtime environment
                       experimental:
                         build-env-bullseye
+                        server-deb-bullseye
+                        desktop-deb-bullseye
+                        server-bullseye
 END_USAGE
   exit 1
 }
@@ -90,10 +93,11 @@ function main() {
   readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
   # Parallelism is no greater than number of available CPUs and max 2.
   readonly NPROC=$(nproc 2>/dev/null)
-  readonly BUILD_PARALLELISM=$(python -c "print(min(2,${NPROC:-2}))")
+  readonly BUILD_PARALLELISM=$(printf '2\n%s' ${NPROC} | sort -n | head -1)
 
   # If we're running on ARM we comment out the cross-build lines.
-  if [[ $(uname -m) =~ 'arm' ]]; then
+  readonly ARCH=$(uname -m)
+  if [[ ${ARCH} =~ 'arm' || ${ARCH} =~ 'aarch64' ]]; then
     readonly CROSS_BUILD_FIX='s/^(.*cross-build-.*)/# $1/'
   else
     readonly CROSS_BUILD_FIX=''

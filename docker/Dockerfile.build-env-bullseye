@@ -104,9 +104,9 @@ WORKDIR /home/pi/Downloads/rstudio
 RUN sed -i -e 's#\(set(RSTUDIO_BUNDLE_QT\) TRUE#\1 FALSE#' src/cpp/desktop/CMakeLists.txt
 
 #--- begin buster
-# We need libssl1.1. No other version will work since we're compiling against
+# We need libssl1.0.2. No other version will work since we're compiling against
 # that version and have a dynamic library depenency on it.
-RUN sed -i -e 's#libssl1.0.0 | libssl1.0.2 | libssl1.1, #libssl1.1, #' package/linux/CMakeLists.txt
+RUN sed -i -e 's#libssl1.0.0 | libssl1.0.2 | libssl1.1, #libssl1.0.2, #' package/linux/CMakeLists.txt
 #--- end buster
 
 # For Desktop, add the package dependencies to system QT libraries.
