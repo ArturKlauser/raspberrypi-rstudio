@@ -25,6 +25,7 @@ FROM arturklauser/raspberrypi-rstudio-build-env:${VERSION_TAG}-${DEBIAN_VERSION}
 RUN [ "cross-build-start" ]
 
 # Define RStudio source code version to use and the package release tag.
+ARG DEBIAN_VERSION
 ARG VERSION_MAJOR
 ARG VERSION_MINOR
 ARG VERSION_PATCH
@@ -49,17 +50,21 @@ ENV RSTUDIO_VERSION_MAJOR=${VERSION_MAJOR} \
 
 # Build everything.
 RUN set -x \
+    # Set up boost dependency.
+    && case $(echo ${VERSION_TAG} | cut -c1-3) in \
+         '1.1') BOOST='-DRSTUDIO_BOOST_VERSION' ;; \
+         '1.2') BOOST='-DRSTUDIO_BOOST_REQUESTED_VERSION' ;; \
+       esac \
+    && case ${DEBIAN_VERSION} in \
+         'stretch' | 'buster') BOOST="${BOOST}=1.62.0" ;; \
+         'bullseye') BOOST="${BOOST}=1.67.0" ;; \
+       esac \
     # Configure the build.
     && cmake .. \
        -DRSTUDIO_TARGET=Desktop \
        -DCMAKE_BUILD_TYPE=Release \
        -DRSTUDIO_PACKAGE_BUILD=1 \
-       #--- begin stretch
-       -DRSTUDIO_BOOST_VERSION=1.62.0 \
-       #--- end stretch
-       #--- begin buster
-       -DRSTUDIO_BOOST_REQUESTED_VERSION=1.62.0 \
-       #--- end buster
+       ${BOOST} \
        -DRSTUDIO_USE_SYSTEM_BOOST=1 \
        -DQT_QMAKE_EXECUTABLE=/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake \
     # Compile the C++ targets.
