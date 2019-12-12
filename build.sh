@@ -75,7 +75,7 @@ function main() {
      readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
      readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
      ;;
-   'build-env-bullseye')
+   'build-env-bullseye' | 'server-deb-bullseye' | 'desktop-deb-bullseye' | 'server-bullseye')
      readonly BUILD_STAGE_SHORT=$(echo "${BUILD_STAGE}" \
        | sed -e 's/-bullseye//')
      readonly \
@@ -88,7 +88,9 @@ function main() {
   esac
 
   readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
-  readonly BUILD_PARALLELISM=2
+  # Parallelism is no greater than number of available CPUs and max 2.
+  readonly NPROC=$(nproc 2>/dev/null)
+  readonly BUILD_PARALLELISM=$(python -c "print(min(2,${NPROC:-2}))")
 
   # If we're running on ARM we comment out the cross-build lines.
   if [[ $(uname -m) =~ 'arm' ]]; then
