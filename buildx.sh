@@ -29,6 +29,14 @@ function timestamp() {
 }
 
 function main() {
+  cat <<EOF
+==============================================================================
+Note that this buildx.sh script depends on the experimental Docker support for
+the _buildx_ plugin. Unless you know what you're doing, use build.sh instead.
+==============================================================================
+
+EOF
+
   if [[ "$#" != 2 ]]; then
     usage "Invalid number ($#) of command line arguments."
   fi

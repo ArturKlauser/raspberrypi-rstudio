@@ -47,7 +47,8 @@ Use Dockerfile.build-env to create the build environment in which the code for
 RStudio Server and Desktop is going to be compiled. The build procedure has
 been adapted to the Raspbian environment using the native version of the Boost
 library and the native QT libraries. It has been tested on Debian 9 (Stretch)
-and  Debian 10 (Buster). Once the build environment is created, it is used by
+and  Debian 10 (Buster). An experimental Debian 11 (Bullseye) version is also
+available. Once the build environment is created, it is used by
 Dockerfile.server-deb and Dockerfile.desktop-deb to build the RStudio Server and
 Desktop Debian packages respectively.
 
@@ -83,7 +84,7 @@ shell script `build.sh`.
 To build, run:
 ```
 for stage in build-env server-deb desktop-deb; do
-  ./build.sh stretch "${stage}"
+  ./build.sh buster "${stage}"
 done
 ```
 
@@ -107,7 +108,7 @@ basic R programs in RStudio Server but doesn't have any extras installed. For
 this you would add the `--target install-minimal` to the docker build command.
 The default is to build a more fully featured runtime with:
 ```
-./build.sh stretch server
+./build.sh buster server
 ```
 The full runtime also has the necessary system and R packages installed to
 support working with .Rmd files including latex for generating PDF, as well as
@@ -142,9 +143,9 @@ If you have specified a different `USER` at build time, you have to adjust the
 `/home` directory accordingly.
 
 ## Getting the .deb Package Files
-If what you want to do is not running RStudio in a Docker container but
-installing it natively on your Raspberry Pi you can do that too. You can
-extract the RStudio Server Debian package from that docker build image with:
+If you want to install and run RStudio natively on your Raspberry Pi you can do
+that too. You can extract the RStudio Server Debian package from that docker
+build image with:
 ```
 docker image save arturklauser/raspberrypi-rstudio-server-deb | tar xO --wildcards '*/layer.tar' | tar x
 ```
