@@ -60,20 +60,20 @@ ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 
 COPY --from=build /rstudio-server-${BUILD_TAG}_armhf.deb .
 
-#--- begin buster
+#--- begin buster or bullseye
 # Debian 10 (Buster) ca-certificates package misses all cert-hash links in
 # /etc/ssl/certs, causing SSL (e.g. curl https://...) to fail. Repopulate those
 # symlinks.
 RUN set -x; \
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
       update-ca-certificates --fresh; \
     fi
-#--- end buster
+#--- end buster or bullseye
 
 # Upgrade base image.
 RUN set -x \
     && apt-get update \
-    && apt-get upgrade -y \
+    && apt-get --with-new-pkgs upgrade -y \
     && apt autoremove \
     && apt-get clean
 
@@ -141,21 +141,21 @@ RUN set -x \
 
 # Install basic packages for .Rmd file handling.
 RUN set -x; \
-#--- begin stretch
+    #--- begin stretch
     if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
       Rscript -e 'install.packages(c("rmarkdown", "rprojroot"), \
                                    repos="http://cran.rstudio.com")'; \
     fi; \
-#--- end stretch
-#--- begin buster
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    #--- end stretch
+    #--- begin buster or bullseye
+    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
       apt-get update \
       && apt-get install -y \
          r-cran-rmarkdown \
          r-cran-rprojroot \
       && apt-get clean; \
     fi
-#--- end buster
+    #--- end buster or bullseye
 
 # Install packages for knitting to PDF.
 RUN set -x \
@@ -197,18 +197,36 @@ RUN set -x; \
       && apt-get clean; \
     fi; \
     #--- end stretch
-    #--- begin buster
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    #--- begin buster or bullseye
+    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
       apt-get update \
       && apt-get install -y \
+         zlib1g-dev \
          r-cran-tidyverse \
       && apt-get clean; \
     fi
-    #--- end buster
+    #--- end buster or bullseye
+
+# Install support for File->New File for Stan, D3, SQL, python, plumber, etc.
+RUN set -x; \
+    #--- begin buster or bullseye
+    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
+      apt-get update \
+      && apt-get install -y \
+         r-cran-rstan \
+         r-cran-rsqlite \
+         r-cran-png \
+         r-cran-reticulate \
+         r-cran-plumber \
+      && Rscript -e 'install.packages(c("r2d3"), \
+                                      repos="http://cran.rstudio.com")' \
+      && apt-get clean; \
+    fi
+    #--- end buster or bullseye
 
 # Install devtools for RStudio "New Project -> R package using devtools"
-#--- begin stretch
 RUN set -x; \
+    #--- begin stretch
     if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
       apt-get update \
       && apt-get install -y \
@@ -228,15 +246,15 @@ RUN set -x; \
                                       repos="http://cran.rstudio.com")' \
       && apt-get clean; \
     fi; \
-#--- end stretch
-#--- begin buster
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    #--- end stretch
+    #--- begin buster or bullseye
+    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
       apt-get update \
       && apt-get install -y \
          r-cran-devtools \
       && apt-get clean; \
     fi
-#--- end buster
+    #--- end buster or bullseye
 
 # Install packages for source code management (available from RStudio menus).
 RUN set -x \

@@ -75,13 +75,19 @@ RUN set -x \
     && ln -s rstudio rstudio-${VERSION_TAG}
 
 WORKDIR /home/pi/Downloads/rstudio/dependencies/linux
-# We're going to use the system version of the boost library (version
-# 1.62.0) instead of installing and building the RStudio version of boost
-# (version 1.63.0) which takes several hours of build time.
+# We're going to use the pre-built system version of the boost library instead
+# of installing and building the RStudio version of boost (version 1.63.0) which
+# takes several hours of build time.
 # Comment out boost source installation.
 RUN perl -i -pe 's/(^.*install-boost$)/# \1/s' ../common/install-common
 # Install system boost.
-RUN apt-get install libboost1.62-all-dev
+RUN set -x \
+  && if [ "${DEBIAN_VERSION}" = 'stretch' -o "${DEBIAN_VERSION}" = 'buster' ]; then \
+         BOOST_VERSION=1.62; \
+       elif [ "${DEBIAN_VERSION}" = 'bullseye'  ]; then \
+         BOOST_VERSION=1.67; \
+       fi \
+  && apt-get install libboost${BOOST_VERSION}-all-dev
 # We use the system QT libraries instead of RSTudio's.
 # Script installs qt-sdk binaries for x86 but we need armhf, so skip it.
 RUN ./install-dependencies-debian --exclude-qt-sdk

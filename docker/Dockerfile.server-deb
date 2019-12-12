@@ -12,7 +12,7 @@
 #     * sudo service dphys-swapfile restart
 #
 # Run the build with the build.sh script to make sure all required ARGs are
-# passed in. This will build the RStudio Desktop Debian package and leave
+# passed in. This will build the RStudio Server Debian package and leave
 # it in the root directory.
 
 ARG DEBIAN_VERSION
@@ -25,6 +25,7 @@ FROM arturklauser/raspberrypi-rstudio-build-env:${VERSION_TAG}-${DEBIAN_VERSION}
 RUN [ "cross-build-start" ]
 
 # Define RStudio source code version to use and the package release tag.
+ARG DEBIAN_VERSION
 ARG VERSION_MAJOR
 ARG VERSION_MINOR
 ARG VERSION_PATCH
@@ -49,17 +50,21 @@ ENV RSTUDIO_VERSION_MAJOR=${VERSION_MAJOR} \
 
 # Build everything.
 RUN set -x \
+    # Set up boost dependency.
+    && case $(echo ${VERSION_TAG} | cut -c1-3) in \
+         '1.1') BOOST='-DRSTUDIO_BOOST_VERSION' ;; \
+         '1.2') BOOST='-DRSTUDIO_BOOST_REQUESTED_VERSION' ;; \
+       esac \
+    && case ${DEBIAN_VERSION} in \
+         'stretch' | 'buster') BOOST="${BOOST}=1.62.0" ;; \
+         'bullseye') BOOST="${BOOST}=1.67.0" ;; \
+       esac \
     # Configure the build.
     && cmake .. \
        -DRSTUDIO_TARGET=Server \
        -DCMAKE_BUILD_TYPE=Release \
        -DRSTUDIO_PACKAGE_BUILD=1 \
-       #--- begin stretch
-       -DRSTUDIO_BOOST_VERSION=1.62.0 \
-       #--- end stretch
-       #--- begin buster
-       -DRSTUDIO_BOOST_REQUESTED_VERSION=1.62.0 \
-       #--- end buster
+       ${BOOST} \
        -DRSTUDIO_USE_SYSTEM_BOOST=1 \
     # Compile the C++ targets.
     && make -j${BUILD_PARALLELISM} \

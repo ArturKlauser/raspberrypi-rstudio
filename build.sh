@@ -19,11 +19,6 @@ Usage: build.sh <debian-version> <build-stage>
                       server-deb .... server Debian package
                       desktop-deb ... desktop Debian package
                       server ........ server runtime environment
-                      experimental:
-                        build-env-bullseye
-                        server-deb-bullseye
-                        desktop-deb-bullseye
-                        server-bullseye
 END_USAGE
   exit 1
 }
@@ -78,13 +73,6 @@ function main() {
      readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
      readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
      ;;
-   'build-env-bullseye' | 'server-deb-bullseye' | 'desktop-deb-bullseye' | 'server-bullseye')
-     readonly BUILD_STAGE_SHORT=$(echo "${BUILD_STAGE}" \
-       | sed -e 's/-bullseye//')
-     readonly \
-       IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE_SHORT}"
-     readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
-     ;;
     *)
       usage "Unsupported build stage '${BUILD_STAGE}'"
      ;;
@@ -102,11 +90,17 @@ function main() {
   else
     readonly CROSS_BUILD_FIX=''
   fi
+  if [[ "${DEBIAN_VERSION}" == 'bullseye' ]]; then
+    readonly BULLSEYE_FIX='s#(balenalib)/(raspberrypi3)#$1-$2#'
+  else
+    readonly BULLSEYE_FIX=''
+  fi
 
   # Build the docker image.
   set -x
   time \
     perl -pe "${CROSS_BUILD_FIX}" "${DOCKERFILE}" \
+    | perl -pe "${BULLSEYE_FIX}" \
     | docker build \
       --build-arg DEBIAN_VERSION="${DEBIAN_VERSION}" \
       --build-arg VERSION_TAG="${VERSION_TAG}" \

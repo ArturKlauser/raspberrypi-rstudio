@@ -12,8 +12,9 @@ function usage() {
   fi
   cat - >&2 << END_USAGE
 Usage: buildx.sh <debian-version> <build-stage>
-         debian-version: stretch ... Debian version 9
-                         buster .... Debian version 10
+         debian-version: stretch ..... Debian version 9
+                         buster ...... Debian version 10
+                         bullseye .... Debian version 11 (experimental)
          build-stage: build-env ..... build environment
                       server-deb .... server Debian package
                       desktop-deb ... desktop Debian package
@@ -54,6 +55,13 @@ function main() {
       readonly VERSION_PATCH=5019
       readonly PACKAGE_RELEASE='1~r2r'
       ;;
+    'bullseye')
+      # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
+      readonly VERSION_MAJOR=1
+      readonly VERSION_MINOR=2
+      readonly VERSION_PATCH=5019
+      readonly PACKAGE_RELEASE='1~r2r'
+      ;;
     *)
       usage "Unsupported Debian version '${DEBIAN_VERSION}'"
       ;;
@@ -71,15 +79,23 @@ function main() {
   esac
 
   readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
-  readonly BUILD_PARALLELISM=2
+  # Parallelism is no greater than number of available CPUs and max 2.
+  readonly NPROC=$(nproc 2>/dev/null)
+  readonly BUILD_PARALLELISM=$(printf '2\n%s' ${NPROC} | sort -n | head -1)
 
   # We comment out the cross-build lines since buildx has cross-build
   # integrated already.
-  #  if [[ $(uname -m) =~ 'arm' ]]; then
+  #  readonly ARCH=$(uname -m)
+  #  if [[ ${ARCH} =~ 'arm' || ${ARCH} =~ 'aarch64' ]]; then
     readonly CROSS_BUILD_FIX='s/^(.*cross-build-.*)/# $1/'
   #  else
   #    readonly CROSS_BUILD_FIX=''
   #  fi
+  if [[ "${DEBIAN_VERSION}" == 'bullseye' ]]; then
+    readonly BULLSEYE_FIX='s#(balenalib)/(raspberrypi3)#$1-$2#'
+  else
+    readonly BULLSEYE_FIX=''
+  fi
 
   # Build the docker image.
   #      --load \
@@ -87,6 +103,7 @@ function main() {
   set -x
   time \
     perl -pe "${CROSS_BUILD_FIX}" "${DOCKERFILE}" \
+    | perl -pe "${BULLSEYE_FIX}" \
     | perl -pe 's#^(FROM '"${DOCKERHUB_USER}"'/\S+)#$1-buildx#' \
     | docker buildx build \
       --platform linux/arm/v7 \
