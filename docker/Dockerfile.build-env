@@ -119,13 +119,13 @@ RUN sed -i -e 's#libssl1.0.0 | libssl1.0.2 | libssl1.1, #libssl1.0.2, #' package
 #--- begin version 1.1.*
 RUN set -x; \
     if [ "${VERSION_MAJOR}.${VERSION_MINOR}" = '1.1' ]; then \
-      RUN sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libgstreamer0.10.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ")#' package/linux/CMakeLists.txt; \
+      sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libgstreamer0.10.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ")#' package/linux/CMakeLists.txt; \
     fi
 #--- end version 1.1.*
 #--- begin version 1.2.*
 RUN set -x; \
     if [ "${VERSION_MAJOR}.${VERSION_MINOR}" = '1.2' ]; then \
-      RUN sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "libedit2,.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ")#' package/linux/CMakeLists.txt; \
+      sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "libedit2,.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ")#' package/linux/CMakeLists.txt; \
     fi
 #--- end version 1.2.*
 
