@@ -116,25 +116,32 @@ RUN sed -i -e 's#libssl1.0.0 | libssl1.0.2 | libssl1.1, #libssl1.0.2, #' package
 #--- end buster
 
 # For Desktop, add the package dependencies to system QT libraries.
-RUN QT_DEPS='libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, '
+RUN echo -n 'libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ' > /tmp/x.qt_deps
 #--- begin buster
 RUN set -x; \
     if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
-      QT_DEPS="${QT_DEPS}libqt5webengine5, libqt5webenginewidgets5, "; \
+      echo -n ="libqt5webengine5, libqt5webenginewidgets5, " >> /tmp/x.qt_deps; \
     fi
 #--- end buster
 #--- begin version 1.1.*
 RUN set -x; \
     if [ "${VERSION_MAJOR}.${VERSION_MINOR}" = '1.1' ]; then \
-      sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libgstreamer0.10.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}'"${QT_DEPS}"')#' package/linux/CMakeLists.txt; \
+      QT_DEPS=$(cat /tmp/x.qt_deps); \
+      sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libgstreamer0.10.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}'"${QT_DEPS}"'")#' package/linux/CMakeLists.txt; \
     fi
 #--- end version 1.1.*
 #--- begin version 1.2.*
 RUN set -x; \
     if [ "${VERSION_MAJOR}.${VERSION_MINOR}" = '1.2' ]; then \
-      sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "libedit2,.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}'"${QT_DEPS}"')#' package/linux/CMakeLists.txt; \
+      QT_DEPS=$(cat /tmp/x.qt_deps); \
+      sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "libedit2,.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}'"${QT_DEPS}"'")#' package/linux/CMakeLists.txt; \
     fi
 #--- end version 1.2.*
+
+# Move package recommendation for r-base to package dependency. It makes
+# little sense to install without r-base since neither server nor desktop
+# can even start without having R installed.
+RUN sed -i -e 's#set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "\(r-base.*$\)#set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, \1#' package/linux/CMakeLists.txt
 
 # Add our own package release (aka. Debian revision number) to the .deb file.
 RUN sed -i -e 's#\(^.*\)-\(${PACKAGE_ARCHITECTURE}\)#set(CPACK_DEBIAN_PACKAGE_RELEASE "'${PACKAGE_RELEASE}'")\n\1-${CPACK_DEBIAN_PACKAGE_RELEASE}_\2#' package/linux/CMakeLists.txt
