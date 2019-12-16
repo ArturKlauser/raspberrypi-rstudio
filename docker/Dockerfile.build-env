@@ -120,7 +120,7 @@ RUN echo -n 'libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors
 #--- begin buster
 RUN set -x; \
     if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
-      echo -n ="libqt5webengine5, libqt5webenginewidgets5, " >> /tmp/x.qt_deps; \
+      echo -n "libqt5webengine5, libqt5webenginewidgets5, " >> /tmp/x.qt_deps; \
     fi
 #--- end buster
 #--- begin version 1.1.*
