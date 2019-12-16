@@ -159,6 +159,19 @@ Check the [releases](https://github.com/ArturKlauser/raspberrypi-rstudio/release
 if you just want to download some pre-built Debian packages.
 
 ## Installing RStudio Natively on Your Raspberry Pi
+
+> ### Note for Raspbian 10 (Buster) Users
+> At this time, the Raspbian Buster package archives that are configured by
+> default on a fresh Raspbian install are missing a few QT5 libraries which are
+> required to run RStudio Desktop. To get access to those, add the Debian package
+> archive to your archive list first.
+> ```
+> sudo cat > /etc/apt/sources.list.d/debian.list << EOF
+> deb http://deb.debian.org/debian/ buster main
+> EOF
+> curl -fsSL https://ftp-master.debian.org/keys/release-10.asc | sudo apt-key add -
+> ```
+
 Once you have extracted the .deb images from the build containers in the steps
 above, you're ready to install them natively on your Raspberry Pi. To make sure
 the dependencies are also properly installed we'll use `apt` instead of `dpkg`
