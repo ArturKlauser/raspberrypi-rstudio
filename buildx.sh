@@ -41,13 +41,15 @@ function min() {
 }
 
 function main() {
-  cat <<EOF
+  if [[ "${script_name}" =~ buildx ]]; then
+    cat <<EOF
 ==============================================================================
 Note that this buildx.sh script depends on the experimental Docker support for
 the _buildx_ plugin. Unless you know what you're doing, use build.sh instead.
 ==============================================================================
 
 EOF
+  fi
 
   if [[ "$#" != 2 ]]; then
     usage "Invalid number ($#) of command line arguments."
@@ -64,20 +66,20 @@ EOF
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=1
       readonly VERSION_PATCH=463
-      readonly PACKAGE_RELEASE="2~r2r.${DEBIAN_VERSION}"
+      readonly PACKAGE_RELEASE="3~r2r.${DEBIAN_VERSION}"
       ;;
     'buster')
-      # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
+      # As of 2019-12-04 v1.2.5033 is the latest version 1.2 tag.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=2
-      readonly VERSION_PATCH=5019
+      readonly VERSION_PATCH=5033
       readonly PACKAGE_RELEASE="1~r2r.${DEBIAN_VERSION}"
       ;;
     'bullseye')
-      # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
+      # As of 2019-12-04 v1.2.5033 is the latest version 1.2 tag.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=2
-      readonly VERSION_PATCH=5019
+      readonly VERSION_PATCH=5033
       readonly PACKAGE_RELEASE="1~r2r.${DEBIAN_VERSION}"
       ;;
     *)
@@ -108,14 +110,14 @@ EOF
   readonly NPROC=$(nproc 2>/dev/null)
   readonly BUILD_PARALLELISM=$(min '2' "${NPROC}")
 
-  # We comment out the cross-build lines since buildx has cross-build
-  # integrated already.
-  #  readonly ARCH=$(uname -m)
-  #  if [[ ${ARCH} =~ 'arm' || ${ARCH} =~ 'aarch64' ]]; then
+  # If we're running on real or simulated ARM we comment out the cross-build
+  # lines.
+  readonly ARCH=$(uname -m)
+  if [[ ${ARCH} =~ (arm|aarch64) || "${script_name}" =~ buildx ]]; then
     readonly CROSS_BUILD_FIX='s/^(.*cross-build-.*)/# $1/'
-  #  else
-  #    readonly CROSS_BUILD_FIX=''
-  #  fi
+  else
+    readonly CROSS_BUILD_FIX=''
+  fi
   if [[ "${DEBIAN_VERSION}" == 'bullseye' ]]; then
     readonly BULLSEYE_FIX='s#(balenalib)/(raspberrypi3)#$1-$2#'
   else
