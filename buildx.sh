@@ -2,6 +2,8 @@
 #
 # Build an RStudio docker image.
 
+readonly script_name=$(basename $0)
+
 # Account name prefix for docker image tags.
 readonly DOCKERHUB_USER='arturklauser'
 
@@ -11,14 +13,15 @@ function usage() {
     (echo "$1"; echo) >&2
   fi
   cat - >&2 << END_USAGE
-Usage: buildx.sh <debian-version> <build-stage>
+Usage: $script_name <debian-version> <stage>
          debian-version: stretch ..... Debian version 9
                          buster ...... Debian version 10
                          bullseye .... Debian version 11 (experimental)
-         build-stage: build-env ..... build environment
-                      server-deb .... server Debian package
-                      desktop-deb ... desktop Debian package
-                      server ........ server runtime environment
+         stage: build-env ......... create build environment
+                server-deb ........ build server Debian package
+                desktop-deb ....... build desktop Debian package
+                server ............ create server runtime environment
+                rstudio-version ... print rstudio version
 END_USAGE
   exit 1
 }
@@ -54,8 +57,6 @@ EOF
   readonly DEBIAN_VERSION="$1"
   readonly BUILD_STAGE="$2"
 
-  echo "Start building at $(timestamp) ..."
-
   # Define RStudio source code version to use and the package release tag.
   case "${DEBIAN_VERSION}" in
    'stretch')
@@ -84,18 +85,25 @@ EOF
       ;;
   esac
 
+  readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+
   # Define image tag and dockerfile depending on requested build stage.
   case "${BUILD_STAGE}" in
    'build-env' | 'server-deb' | 'desktop-deb' | 'server')
      readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
      readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
      ;;
+   'rstudio-version')
+     echo "${VERSION_TAG}"
+     exit 0
+     ;;
     *)
       usage "Unsupported build stage '${BUILD_STAGE}'"
      ;;
   esac
 
-  readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+  echo "Start building at $(timestamp) ..."
+
   # Parallelism is no greater than number of available CPUs and max 2.
   readonly NPROC=$(nproc 2>/dev/null)
   readonly BUILD_PARALLELISM=$(min '2' "${NPROC}")
