@@ -58,11 +58,24 @@ RUN set -x \
     && apt-get install -y \
        galternatives \
        git \
-       openjdk-8-jdk \
        pandoc \
        pandoc-citeproc \
        python-dev \
        r-recommended
+
+# Install openjdk-8-jdk.
+# Buster version crashes on AWS EC2 ARM instances and QMU emulator on x86, so we
+# source the version from the stretch package depo instead, which works fine.
+RUN set -x; \
+    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+      echo "deb http://archive.raspbian.org/raspbian stretch main" > /etc/apt/sources.list.d/raspbian-stretch.list; \
+      apt-get update; \
+    fi; \
+    apt-get install -y openjdk-8-jdk; \
+    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+      rm -f /etc/apt/sources.list.d/raspbian-stretch.list; \
+      apt-get update; \
+    fi
 
 # Get the RStudio sources. We only make a shallow clone of the version we
 # need, instead of cloning the whole repository.
