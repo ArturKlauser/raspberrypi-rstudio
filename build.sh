@@ -46,21 +46,21 @@ function main() {
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=1
       readonly VERSION_PATCH=463
-      readonly PACKAGE_RELEASE="3~r2r_${DEBIAN_VERSION}"
+      readonly PACKAGE_RELEASE="3~r2r.${DEBIAN_VERSION}"
       ;;
     'buster')
       # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=2
       readonly VERSION_PATCH=5019
-      readonly PACKAGE_RELEASE="2~r2r_${DEBIAN_VERSION}"
+      readonly PACKAGE_RELEASE="2~r2r.${DEBIAN_VERSION}"
       ;;
     'bullseye')
       # As of 2019-10-26 v1.2.5019 is the latest version 1.2 tag.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=2
       readonly VERSION_PATCH=5019
-      readonly PACKAGE_RELEASE="2~r2r_${DEBIAN_VERSION}"
+      readonly PACKAGE_RELEASE="2~r2r.${DEBIAN_VERSION}"
       ;;
     *)
       usage "Unsupported Debian version '${DEBIAN_VERSION}'"
