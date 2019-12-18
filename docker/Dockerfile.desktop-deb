@@ -56,8 +56,8 @@ RUN set -x \
          '1.2') BOOST='-DRSTUDIO_BOOST_REQUESTED_VERSION' ;; \
        esac \
     && case ${DEBIAN_VERSION} in \
-         'stretch' | 'buster') BOOST="${BOOST}=1.62.0" ;; \
-         'bullseye') BOOST="${BOOST}=1.67.0" ;; \
+         'stretch') BOOST="${BOOST}=1.62.0" ;; \
+         'buster' | 'bullseye') BOOST="${BOOST}=1.67.0" ;; \
        esac \
     # Configure the build.
     && cmake .. \

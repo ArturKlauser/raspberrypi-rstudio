@@ -95,9 +95,9 @@ WORKDIR /home/pi/Downloads/rstudio/dependencies/linux
 RUN perl -i -pe 's/(^.*install-boost$)/# \1/s' ../common/install-common
 # Install system boost.
 RUN set -x \
-  && if [ "${DEBIAN_VERSION}" = 'stretch' -o "${DEBIAN_VERSION}" = 'buster' ]; then \
+  && if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
          BOOST_VERSION=1.62; \
-       elif [ "${DEBIAN_VERSION}" = 'bullseye'  ]; then \
+       elif [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye'  ]; then \
          BOOST_VERSION=1.67; \
        fi \
   && apt-get install libboost${BOOST_VERSION}-all-dev
