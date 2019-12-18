@@ -34,17 +34,19 @@ ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 #--- begin buster
 # Debian 10 (Buster) repositories are not signed yet, so override apt
 # security checks.
-RUN set -x; \
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
-      perl -i -pe 's/^deb (\[([^\]]*)\](\s*))?/deb [trusted=yes$3$2] /' /etc/apt/sources.list; \
-    fi
-# Debian 10 (Buster) ca-certificates package misses all cert-hash links in
-# /etc/ssl/certs, causing SSL (e.g. curl https://...) to fail. Repopulate those
-# symlinks.
-RUN set -x; \
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
-      update-ca-certificates --fresh; \
-    fi
+# --- no longer necessary, signed now ---
+# RUN set -x; \
+#     if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+#       perl -i -pe 's/^deb (\[([^\]]*)\](\s*))?/deb [trusted=yes$3$2] /' /etc/apt/sources.list; \
+#     fi
+# # Debian 10 (Buster) ca-certificates package misses all cert-hash links in
+# # /etc/ssl/certs, causing SSL (e.g. curl https://...) to fail. Repopulate those
+# # symlinks.
+# --- no longer necessary
+# RUN set -x; \
+#     if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+#       update-ca-certificates --fresh; \
+#     fi
 #--- end buster
 
 # Upgrade base image.
