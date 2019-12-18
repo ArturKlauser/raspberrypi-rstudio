@@ -28,6 +28,15 @@ function timestamp() {
   date -u +'%Y-%m-%dT%H:%M:%SZ'
 }
 
+# Return minimum of two numeric inputs.
+function min() {
+  if [[ "$1" -lt "$2" ]]; then
+    echo $1
+  else
+    echo $2
+  fi
+}
+
 function main() {
   cat <<EOF
 ==============================================================================
@@ -89,7 +98,7 @@ EOF
   readonly VERSION_TAG=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
   # Parallelism is no greater than number of available CPUs and max 2.
   readonly NPROC=$(nproc 2>/dev/null)
-  readonly BUILD_PARALLELISM=$(printf '2\n%s' ${NPROC} | sort -n | head -1)
+  readonly BUILD_PARALLELISM=$(min '2' "${NPROC}")
 
   # We comment out the cross-build lines since buildx has cross-build
   # integrated already.

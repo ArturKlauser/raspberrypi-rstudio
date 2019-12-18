@@ -79,9 +79,8 @@ RUN set -x \
        rsession \
        rstudio-session-workers \
        rpostback \
-    # Compile the rest, in particular java gwt_build, with parallelism 1 to
-    # reduce the memory pressure.
-    && make -j1 preinstall
+    # Compile the rest, in particular java gwt_build.
+    && make -j${BUILD_PARALLELISM} preinstall
 
 # Create the deb package. Unfortunately cpack wants to rerun the whole build,
 # so we'll work around that by giving it an empty build rule.
