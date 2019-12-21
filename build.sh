@@ -63,6 +63,9 @@ EOF
   case "${DEBIAN_VERSION}" in
    'stretch')
       # As of 2019-04-06 v1.1.463 is the latest version 1.1 tag.
+      # Rstudio v1.2 doesn't compile on Stretch since it needs QT 5.10 but
+      # Stretch only provides QT 5.7.1. QT provided by RStudio is x86 binary
+      # only.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=1
       readonly VERSION_PATCH=463

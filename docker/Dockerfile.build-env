@@ -81,8 +81,8 @@ RUN set -x; \
 
 # Get the RStudio sources. We only make a shallow clone of the version we
 # need, instead of cloning the whole repository.
-# Note that HEAD has dependencies that RaspberryPi3 Debian 9 (Stretch)
-# currently doesn't satisfy, e.g. QT >= 5.10.
+# Note that Rstudio 1.2 has dependencies that Raspbian 9 (Stretch) doesn't
+# satisfy, e.g. Rstudio needs QT >= 5.10, Stretch has QT 5.7.1.
 RUN set -x \
     && mkdir -p /home/pi/Downloads \
     && cd /home/pi/Downloads \
