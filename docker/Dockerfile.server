@@ -109,6 +109,7 @@ RUN [ "cross-build-end" ]
 FROM install-minimal as install-full
 
 ARG DEBIAN_VERSION
+ARG BUILD_PARALLELISM=1
 
 # Comment out next line for native build.
 RUN [ "cross-build-start" ]
@@ -138,6 +139,10 @@ RUN set -x \
     && apt-get install -y \
        r-cran-rcpp \
     && apt-get clean
+
+# When building packages from source with install.packages(), use build
+# parallelism.
+RUN echo "options(Ncpus = ${BUILD_PARALLELISM})" > ~/.Rprofile
 
 # Install basic packages for .Rmd file handling.
 RUN set -x; \
