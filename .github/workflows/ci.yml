@@ -23,3 +23,15 @@ jobs:
         key: pre-commit|${{env.PY}}|${{hashFiles('.pre-commit-config.yaml')}}
     - name: Run pre-commit checks
       uses: pre-commit/action@v1.0.0
+
+  dry-run:
+    name: Dry-run build scripts
+    needs: run-pre-commits
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 2  # little history, just HEAD and HEAD~
+    - name: Dry-run
+      run: |
+        ./tools/dry-run.sh --verbose
