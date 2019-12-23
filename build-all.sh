@@ -18,10 +18,10 @@ function docker_image_name() {
 function build_message() {
   local stage=$1
   local message="========== building ${stage} ${rstudio_version}-${debian_version} =========="
-  local line=$(echo $message | sed -e 's/./=/g')
-  echo $line
-  echo $message
-  echo $line
+  local line="${message//?/=}"
+  echo "${line}"
+  echo "${message}"
+  echo "${line}"
 }
 
 function build() {
@@ -45,28 +45,28 @@ function main() {
 
     build 'build-env'
     ( # handle docker in background
-      docker push $(docker_image_name build-env)
+      docker push "$(docker_image_name build-env)"
       docker image prune --force
     ) &
 
     build 'desktop-deb'
     ( # handle docker in background
-      docker push $(docker_image_name desktop-deb)
-      docker rmi $(docker_image_name desktop-deb)
+      docker push "$(docker_image_name desktop-deb)"
+      docker rmi "$(docker_image_name desktop-deb)"
       docker image prune --force
     ) &
 
     build 'server-deb'
     ( # handle docker in background
-      docker push $(docker_image_name server-deb)
-      docker rmi $(docker_image_name build-env)
+      docker push "$(docker_image_name server-deb)"
+      docker rmi "$(docker_image_name build-env)"
       docker image prune --force
     ) &
 
     build 'server'
-    docker rmi $(docker_image_name server-deb) &
-    docker push $(docker_image_name server)
-    docker rmi $(docker_image_name server)
+    docker rmi "$(docker_image_name server-deb)" &
+    docker push "$(docker_image_name server)"
+    docker rmi "$(docker_image_name server)"
     wait # wait until all background processing has completed
 
     # Clean image repository thoroughly before going to next Debian version.
