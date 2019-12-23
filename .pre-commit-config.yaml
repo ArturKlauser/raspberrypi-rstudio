@@ -1,0 +1,38 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+default_language_version:
+    python: python3.7
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.4.0
+    hooks:
+    #-- Generic checks.
+        # Check for files that would conflict in case-insensitive filesystems.
+    -   id: check-case-conflict
+        # Check for files that contain merge conflict strings.
+    -   id: check-merge-conflict
+        # Checks for symlinks which do not point to anything.
+    -   id: check-symlinks
+        # Prevent giant files from being committed.
+    -   id: check-added-large-files
+
+    #-- Content specific checks.
+        # Trims trailing whitespace.
+    -   id: trailing-whitespace
+        # Ensures that a file is either empty, or ends with one newline.
+    -   id: end-of-file-fixer
+        # Replaces or checks mixed line ending.
+    -   id: mixed-line-ending
+        args: [--fix=lf]
+        #  Detects the presence of private keys.
+    -   id: detect-private-key
+        # Checks yaml files for parseable syntax.
+    -   id: check-yaml
+
+-   repo: local
+    hooks:
+    -   id: shellcheck
+        name: shellcheck
+        language: docker_image
+        entry: koalaman/shellcheck:stable
+        types: [shell]

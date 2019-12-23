@@ -15,7 +15,7 @@ separate docker image:
      * Dockerhub: [arturklauser/raspberrypi-rstudio-desktop-deb](https://hub.docker.com/r/arturklauser/raspberrypi-rstudio-desktop-deb)
   4. Creating an RStudio Server runtime environment from 2.
      * Dockerhub: [arturklauser/raspberrypi-rstudio-server](https://hub.docker.com/r/arturklauser/raspberrypi-rstudio-server)
-     
+
 The docker images can be either created natively on a sufficiently potent
 Raspberry Pi (e.g. Raspberry Pi 3 with 1 GB of memory) or they can be created
 by cross-building on an x86 host. Due to the fabulous work of the folks at

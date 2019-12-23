@@ -2,7 +2,7 @@
 #
 # Build an RStudio docker image.
 
-readonly script_name=$(basename $0)
+readonly script_name=$(basename "$0")
 
 # Account name prefix for docker image tags.
 readonly DOCKERHUB_USER='arturklauser'
@@ -34,9 +34,9 @@ function timestamp() {
 # Return minimum of two numeric inputs.
 function min() {
   if [[ "$1" -lt "$2" ]]; then
-    echo $1
+    echo "$1"
   else
-    echo $2
+    echo "$2"
   fi
 }
 
@@ -63,6 +63,9 @@ EOF
   case "${DEBIAN_VERSION}" in
    'stretch')
       # As of 2019-04-06 v1.1.463 is the latest version 1.1 tag.
+      # Rstudio v1.2 doesn't compile on Stretch since it needs QT 5.10 but
+      # Stretch only provides QT 5.7.1. QT provided by RStudio is x86 binary
+      # only.
       readonly VERSION_MAJOR=1
       readonly VERSION_MINOR=1
       readonly VERSION_PATCH=463
@@ -114,11 +117,13 @@ EOF
   # lines.
   readonly ARCH=$(uname -m)
   if [[ ${ARCH} =~ (arm|aarch64) || "${script_name}" =~ buildx ]]; then
+    # shellcheck disable=SC2016
     readonly CROSS_BUILD_FIX='s/^(.*cross-build-.*)/# $1/'
   else
     readonly CROSS_BUILD_FIX=''
   fi
   if [[ "${DEBIAN_VERSION}" == 'bullseye' ]]; then
+    # shellcheck disable=SC2016
     readonly BULLSEYE_FIX='s#(balenalib)/(raspberrypi3)#$1-$2#'
   else
     readonly BULLSEYE_FIX=''
@@ -143,8 +148,8 @@ EOF
       --build-arg VERSION_PATCH="${VERSION_PATCH}" \
       --build-arg PACKAGE_RELEASE="${PACKAGE_RELEASE}" \
       --build-arg BUILD_PARALLELISM="${BUILD_PARALLELISM}" \
-      --build-arg VCS_REF=$(git log --pretty=format:'%H' HEAD~..HEAD) \
-      --build-arg BUILD_DATE=$(timestamp) \
+      --build-arg VCS_REF="$(git log --pretty=format:'%H' HEAD~..HEAD)" \
+      --build-arg BUILD_DATE="$(timestamp)" \
       -t "${IMAGE_NAME}:${VERSION_TAG}-${DEBIAN_VERSION}-buildx" \
       -
   set +x
