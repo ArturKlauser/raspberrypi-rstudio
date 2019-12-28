@@ -36,3 +36,9 @@ repos:
         language: docker_image
         entry: koalaman/shellcheck:stable
         types: [shell]
+    -   id: shfmt
+        name: shfmt
+        language: docker_image
+        entry: mvdan/shfmt:v3.0.0
+        args: [-ln=bash, -i, '2', -bn, -ci, -sr, -w]
+        types: [shell]

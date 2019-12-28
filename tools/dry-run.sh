@@ -36,7 +36,7 @@ function check_num_lines() {
 }
 
 function run() {
-  if (( verbose )); then
+  if ((verbose)); then
     "$@" 2>&1 | tee -a "${log}"
   else
     "$@" >> "${log}" 2>&1

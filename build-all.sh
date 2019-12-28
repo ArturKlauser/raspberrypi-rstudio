@@ -44,20 +44,20 @@ function main() {
     fi
 
     build 'build-env'
-    ( # handle docker in background
+    (# handle docker in background
       docker push "$(docker_image_name build-env)"
       docker image prune --force
     ) &
 
     build 'desktop-deb'
-    ( # handle docker in background
+    (# handle docker in background
       docker push "$(docker_image_name desktop-deb)"
       docker rmi "$(docker_image_name desktop-deb)"
       docker image prune --force
     ) &
 
     build 'server-deb'
-    ( # handle docker in background
+    (# handle docker in background
       docker push "$(docker_image_name server-deb)"
       docker rmi "$(docker_image_name build-env)"
       docker image prune --force

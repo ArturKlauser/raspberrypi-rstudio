@@ -10,7 +10,10 @@ readonly DOCKERHUB_USER='arturklauser'
 # Print usage message with error and exit.
 function usage() {
   if [ "$#" != 0 ]; then
-    (echo "$1"; echo) >&2
+    (
+      echo "$1"
+      echo
+    ) >&2
   fi
   cat - >&2 << END_USAGE
 Usage: $script_name <debian-version> <stage>
@@ -42,7 +45,7 @@ function min() {
 
 function main() {
   if [[ "${script_name}" =~ buildx ]]; then
-    cat <<EOF
+    cat << EOF
 ==============================================================================
 Note that this buildx.sh script depends on the experimental Docker support for
 the _buildx_ plugin. Unless you know what you're doing, use build.sh instead.
@@ -61,7 +64,7 @@ EOF
 
   # Define RStudio source code version to use and the package release tag.
   case "${DEBIAN_VERSION}" in
-   'stretch')
+    'stretch')
       # As of 2019-04-06 v1.1.463 is the latest version 1.1 tag.
       # Rstudio v1.2 doesn't compile on Stretch since it needs QT 5.10 but
       # Stretch only provides QT 5.7.1. QT provided by RStudio is x86 binary
@@ -94,23 +97,23 @@ EOF
 
   # Define image tag and dockerfile depending on requested build stage.
   case "${BUILD_STAGE}" in
-   'build-env' | 'server-deb' | 'desktop-deb' | 'server')
-     readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
-     readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
-     ;;
-   'rstudio-version')
-     echo "${VERSION_TAG}"
-     exit 0
-     ;;
+    'build-env' | 'server-deb' | 'desktop-deb' | 'server')
+      readonly IMAGE_NAME="${DOCKERHUB_USER}/raspberrypi-rstudio-${BUILD_STAGE}"
+      readonly DOCKERFILE="docker/Dockerfile.${BUILD_STAGE}"
+      ;;
+    'rstudio-version')
+      echo "${VERSION_TAG}"
+      exit 0
+      ;;
     *)
       usage "Unsupported build stage '${BUILD_STAGE}'"
-     ;;
+      ;;
   esac
 
   echo "Start building at $(timestamp) ..."
 
   # Parallelism is no greater than number of available CPUs and max 2.
-  readonly NPROC=$(nproc 2>/dev/null)
+  readonly NPROC=$(nproc 2> /dev/null)
   readonly BUILD_PARALLELISM=$(min '2' "${NPROC}")
 
   # If we're running on real or simulated ARM we comment out the cross-build
