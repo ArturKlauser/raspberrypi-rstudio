@@ -2,6 +2,8 @@
   <img src="https://github.com/ArturKlauser/raspberrypi-rstudio/blob/master/doc/raspberrypi-rstudio.png?raw=true"/>
 </p>
 
+[![Build Status](https://travis-ci.org/ArturKlauser/raspberrypi-rstudio.svg?branch=deploy)](https://travis-ci.org/ArturKlauser/raspberrypi-rstudio/builds)
+
 # Docker Build and Runtime Environment for RStudio on Raspberry Pi
 
 The Dockerfiles in this repository are used to build the RStudio Server and

@@ -8,12 +8,19 @@
 # You need to build these containers before you try to build 'bullseye' versions
 # or RStudio with build.sh bullseye <build-stage>
 
-docker build \
-  -f docker/Dockerfile.balenalib-raspberrypi3-debian-bullseye-run \
-  -t balenalib-raspberrypi3-debian:bullseye-run \
-  docker
+function build_balenalib() {
+  local -r variant=$1
+  docker build \
+    -f "docker/Dockerfile.balenalib-raspberrypi3-debian-bullseye-${variant}" \
+    -t "balenalib-raspberrypi3-debian:bullseye-${variant}" \
+    docker
+}
 
-docker build \
-  -f docker/Dockerfile.balenalib-raspberrypi3-debian-bullseye-build \
-  -t balenalib-raspberrypi3-debian:bullseye-build \
-  docker
+function main() {
+  local -r default=('run' 'build')
+  for variant in "${@:-${default[@]}}"; do
+    build_balenalib "${variant}"
+  done
+}
+
+main "$@"

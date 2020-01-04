@@ -1,0 +1,67 @@
+os: linux
+dist: xenial  # Ubuntu: 16.04 (xenial), 18.04 (bionic)
+arch: arm64
+language: shell
+# This build is expensive O(hours). Only run on dedicated deployment branch.
+if: branch = deploy
+services: docker
+git:
+  depth: 1
+
+jobs:
+  include:
+    # Build instructions for one stage (= docker build), one Debian version.
+    - &build-env
+      stage: build-env
+      env: debian_version=stretch
+      # We use before_script instead of script because we want to error out at
+      # the first sign of trouble.
+      before_script:
+        - stage="$(echo ${TRAVIS_BUILD_STAGE_NAME} | tr '[A-Z]' '[a-z]')"
+        - |
+          if [[ "${debian_version}" == 'bullseye' ]]; then
+            if [[ "${stage}" == 'build-env' ]]; then
+              bash -ec "./balenalib-bullseye-build.sh build"
+            elif [[ "${stage}" == 'server' ]]; then
+              bash -ec "./balenalib-bullseye-build.sh run"
+            fi
+          fi
+        # For some reason executing a function with 'set -e; f' hangs Travis
+        # on error in the function, whereas 'bash -ec f' errors the build as
+        # expected.
+        - bash -ec "source ./build-functions.sh; build ${stage}"
+        - docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASSWORD"
+        - bash -ec "source ./build-functions.sh; push ${stage}"
+    # Do the same (in parallel) for other Debian versions.
+    - <<: *build-env
+      env: debian_version=buster
+    - <<: *build-env
+      env: debian_version=bullseye
+
+    # This stanza repeats for every build stage. It's rather obscure and ugly,
+    # but Travis' expressibility for job dependencies is quite limited. This is
+    # the most concise way I have found to express an approximation of the
+    # actual dependencies.
+    - &server-deb
+      <<: *build-env
+      stage: server-deb
+    - <<: *server-deb
+      env: debian_version=buster
+    - <<: *server-deb
+      env: debian_version=bullseye
+
+    - &server
+      <<: *build-env
+      stage: server
+    - <<: *server
+      env: debian_version=buster
+    - <<: *server
+      env: debian_version=bullseye
+
+    - &desktop-deb
+      <<: *build-env
+      stage: desktop-deb
+    - <<: *desktop-deb
+      env: debian_version=buster
+    - <<: *desktop-deb
+      env: debian_version=bullseye

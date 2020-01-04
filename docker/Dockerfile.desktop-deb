@@ -40,6 +40,10 @@ ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 # least 6-8 GB of memory you may get faster build times setting this to e.g. 4.
 ARG BUILD_PARALLELISM=2
 
+# Travis CI needs special handling since it expects output at least every 10
+# minutes, otherwise it errors the job.
+ARG TRAVIS
+
 WORKDIR /home/pi/Downloads/rstudio/build
 
 # These environment variables are used by the build system to set the
@@ -59,6 +63,14 @@ RUN set -x \
          'stretch') BOOST="${BOOST}=1.62.0" ;; \
          'buster' | 'bullseye') BOOST="${BOOST}=1.67.0" ;; \
        esac \
+    # Travis: Make sure gwt spews output frequently enough for Travis not to
+    # declare the build dead and error out the job.
+    && if [ "$TRAVIS" = 'true' ]; then \
+         build_xml='../src/gwt/build.xml'; \
+         loglevel='<arg value="-logLevel"/>\n<arg value="TRACE"/>\n'; \
+         perl -i -pe "s#(.*-localWorkers.*)#$loglevel\1#" "$build_xml"; \
+         cat "$build_xml"; \
+       fi \
     # Configure the build.
     && cmake .. \
        -DRSTUDIO_TARGET=Desktop \
@@ -80,7 +92,10 @@ RUN set -x \
        rstudio-session-workers \
        rpostback \
     # Compile the rest, in particular java gwt_build.
-    && make -j${BUILD_PARALLELISM} preinstall
+    && make -j${BUILD_PARALLELISM} preinstall \
+       # Travis: Prune some of the gwt spew again. Too much output can cause a
+       # log overflow and error out the job.
+       | grep -v '^ *\[java\] +(Found|Resolving)'
 
 # Create the deb package. Unfortunately cpack wants to rerun the whole build,
 # so we'll work around that by giving it an empty build rule.

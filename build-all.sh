@@ -10,30 +10,10 @@
 # Account name prefix for docker image tags.
 readonly DOCKERHUB_USER='arturklauser'
 
-function docker_image_name() {
-  local stage=$1
-  echo "${DOCKERHUB_USER}/raspberrypi-rstudio-${stage}:${rstudio_version}-${debian_version}"
-}
-
-function build_message() {
-  local stage=$1
-  local message="========== building ${stage} ${rstudio_version}-${debian_version} =========="
-  local line="${message//?/=}"
-  echo "${line}"
-  echo "${message}"
-  echo "${line}"
-}
-
-function build() {
-  local stage=$1
-  build_message "${stage}"
-  ./build.sh "${debian_version}" "${stage}"
-}
+source ./build-functions.sh
 
 function main() {
   for debian_version in stretch buster bullseye; do
-    rstudio_version=$(./build.sh ${debian_version} 'rstudio-version')
-
     # Throw out unreferenced junk from Docker.
     docker container prune --force
     docker image prune --force
@@ -45,28 +25,28 @@ function main() {
 
     build 'build-env'
     (# handle docker in background
-      docker push "$(docker_image_name build-env)"
+      push 'build-env'
       docker image prune --force
     ) &
 
     build 'desktop-deb'
     (# handle docker in background
-      docker push "$(docker_image_name desktop-deb)"
-      docker rmi "$(docker_image_name desktop-deb)"
+      push 'desktop-deb'
+      remove_image 'desktop-deb'
       docker image prune --force
     ) &
 
     build 'server-deb'
     (# handle docker in background
-      docker push "$(docker_image_name server-deb)"
-      docker rmi "$(docker_image_name build-env)"
+      push 'server-deb'
+      remove_image 'build-env'
       docker image prune --force
     ) &
 
     build 'server'
-    docker rmi "$(docker_image_name server-deb)" &
-    docker push "$(docker_image_name server)"
-    docker rmi "$(docker_image_name server)"
+    remove_image 'server-deb' &
+    push 'server'
+    remove_image 'server'
     wait # wait until all background processing has completed
 
     # Clean image repository thoroughly before going to next Debian version.
