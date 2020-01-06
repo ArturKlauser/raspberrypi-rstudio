@@ -35,6 +35,7 @@ repos:
         name: shellcheck
         language: docker_image
         entry: koalaman/shellcheck:stable
+        args: [-xa]
         types: [shell]
     -   id: shfmt
         name: shfmt

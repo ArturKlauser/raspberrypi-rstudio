@@ -139,9 +139,10 @@ EOF
   fi
 
   # Build the docker image.
-  (for i in {1..100}; do
-    sleep 60
+  (for i in {0..100}; do
+    sleep 1
     echo "Still building ... ($i min)"
+    sleep 59
   done) &
   pid=$!
   # Get current commit SHA. Works also on --depth=1 shallow clones.
