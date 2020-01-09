@@ -3,6 +3,7 @@
 #
 # from https://github.com/balena-io-library/base-images/blob/master/balena-base-images/device-base/raspberrypi3/debian/sid/run/Dockerfile
 FROM balenalib/armv7hf-debian:sid-run
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 LABEL io.balena.device-type="raspberrypi3"
 RUN echo "deb http://archive.raspbian.org/raspbian bullseye main contrib non-free rpi firmware" >>  /etc/apt/sources.list \
   && apt-key adv --batch --keyserver ha.pool.sks-keyservers.net  --recv-key 0x9165938D90FDDD2E
@@ -10,6 +11,7 @@ RUN echo "deb http://archive.raspbian.org/raspbian bullseye main contrib non-fre
 #  && echo "deb http://archive.raspberrypi.org/debian bullseye main ui" >>  /etc/apt/sources.list.d/raspi.list \
 #  && apt-key adv --batch --keyserver ha.pool.sks-keyservers.net  --recv-key 0x82B129927FA3303E
 
+# hadolint ignore=DL3005,DL3008
 RUN apt-get update \
   && apt-get --with-new-pkgs upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -22,5 +24,6 @@ RUN apt-get update \
     iputils-ping \
     i2c-tools \
     usbutils \
-  && apt autoremove \
+  && apt-get autoremove \
+  && apt-get clean \
   && rm -rf /var/lib/apt/lists/*

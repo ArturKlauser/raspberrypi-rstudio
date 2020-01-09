@@ -18,7 +18,9 @@
 ARG DEBIAN_VERSION
 ARG VERSION_TAG
 
-FROM arturklauser/raspberrypi-rstudio-build-env:${VERSION_TAG}-${DEBIAN_VERSION} as build_env
+FROM arturklauser/raspberrypi-rstudio-build-env:${VERSION_TAG}-${DEBIAN_VERSION} AS build_env
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
@@ -65,7 +67,7 @@ RUN set -x \
        esac \
     # Travis: Make sure gwt spews output frequently enough for Travis not to
     # declare the build dead and error out the job.
-    && if [ "$TRAVIS" = 'true' ]; then \
+    && if [[ "$TRAVIS" == 'true' ]]; then \
          build_xml='../src/gwt/build.xml'; \
          loglevel='<arg value="-logLevel"/>\n<arg value="TRACE"/>\n'; \
          perl -i -pe "s#(.*-localWorkers.*)#$loglevel\1#" "$build_xml"; \
@@ -112,7 +114,7 @@ RUN [ "cross-build-end" ]
 # Extract only the finished Debian package and leave it in an empty docker
 # image to reduce image size. If you want to capture the package in its
 # build environment, build it only to stage --target=build_env
-FROM scratch as package
+FROM scratch AS package
 
 # ARGs need to be redefined in every build stage to be accessible.
 ARG VERSION_MAJOR

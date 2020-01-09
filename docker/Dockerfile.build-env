@@ -14,7 +14,9 @@ ARG DEBIAN_VERSION
 ARG VERSION_TAG
 
 # See https://www.balena.io/docs/reference/base-images/base-images/
-FROM balenalib/raspberrypi3-debian:${DEBIAN_VERSION}-build as build_env
+FROM balenalib/raspberrypi3-debian:${DEBIAN_VERSION}-build AS build_env
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
@@ -36,7 +38,7 @@ ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 # security checks.
 # --- no longer necessary, signed now ---
 # RUN set -x; \
-#     if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+#     if [[ "${DEBIAN_VERSION}" == 'buster' ]]; then \
 #       perl -i -pe 's/^deb (\[([^\]]*)\](\s*))?/deb [trusted=yes$3$2] /' /etc/apt/sources.list; \
 #     fi
 # # Debian 10 (Buster) ca-certificates package misses all cert-hash links in
@@ -44,45 +46,55 @@ ARG BUILD_TAG=${VERSION_TAG}-${PACKAGE_RELEASE}
 # # symlinks.
 # --- no longer necessary
 # RUN set -x; \
-#     if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+#     if [[ "${DEBIAN_VERSION}" == 'buster' ]]; then \
 #       update-ca-certificates --fresh; \
 #     fi
 #--- end buster
 
 # Upgrade base image.
+# hadolint ignore=DL3005,DL3008,DL3015
 RUN set -x \
     && apt-get update \
     && apt-get upgrade -y \
-    && apt autoremove
+    && apt-get autoremove \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install some basic build dependencies.
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
+    && apt-get update \
     && apt-get install -y \
        galternatives \
        git \
        pandoc \
        pandoc-citeproc \
        python-dev \
-       r-recommended
+       r-recommended \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install openjdk-8-jdk.
 # Buster version crashes on AWS EC2 ARM instances and QMU emulator on x86, so we
 # source the version from the stretch package depo instead, which works fine.
+# hadolint ignore=DL3008,DL3015
 RUN set -x; \
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    if [[ "${DEBIAN_VERSION}" == 'buster' ]]; then \
       echo "deb http://archive.raspbian.org/raspbian stretch main" > /etc/apt/sources.list.d/raspbian-stretch.list; \
-      apt-get update; \
-    fi; \
-    apt-get install -y openjdk-8-jdk; \
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    fi \
+    && apt-get update \
+    && apt-get install -y openjdk-8-jdk; \
+    if [[ "${DEBIAN_VERSION}" == 'buster' ]]; then \
       rm -f /etc/apt/sources.list.d/raspbian-stretch.list; \
-      apt-get update; \
-    fi
+    fi \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Get the RStudio sources. We only make a shallow clone of the version we
 # need, instead of cloning the whole repository.
 # Note that Rstudio 1.2 has dependencies that Raspbian 9 (Stretch) doesn't
 # satisfy, e.g. Rstudio needs QT >= 5.10, Stretch has QT 5.7.1.
+# hadolint ignore=DL3003
 RUN set -x \
     && mkdir -p /home/pi/Downloads \
     && cd /home/pi/Downloads \
@@ -96,18 +108,29 @@ WORKDIR /home/pi/Downloads/rstudio/dependencies/linux
 # Comment out boost source installation.
 RUN perl -i -pe 's/(^.*install-boost$)/# \1/s' ../common/install-common
 # Install system boost.
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
-  && if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
+  && if [[ "${DEBIAN_VERSION}" == 'stretch' ]]; then \
          BOOST_VERSION=1.62; \
-       elif [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye'  ]; then \
+       elif [[ "${DEBIAN_VERSION}" =~ (buster|bullseye)  ]]; then \
          BOOST_VERSION=1.67; \
        fi \
-  && apt-get install libboost${BOOST_VERSION}-all-dev
+  && apt-get update \
+  && apt-get install -y libboost${BOOST_VERSION}-all-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 # We use the system QT libraries instead of RSTudio's.
 # Script installs qt-sdk binaries for x86 but we need armhf, so skip it.
-RUN ./install-dependencies-debian --exclude-qt-sdk
+RUN set -x \
+  && apt-get update \
+  && ./install-dependencies-debian --exclude-qt-sdk \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 # Install system QT libraries.
-RUN apt-get install -y \
+# hadolint ignore=DL3008,DL3015
+RUN set -x \
+  && apt-get update \
+  && apt-get install -y \
       libqt5opengl5-dev \
       libqt5sensors5-dev \
       libqt5svg5-dev \
@@ -116,7 +139,9 @@ RUN apt-get install -y \
       qt5-default \
       qt5-style-plugins \
       qtpositioning5-dev \
-      qtwebengine5-dev
+      qtwebengine5-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/pi/Downloads/rstudio
 # Package building wants to grab QT library files to bundle them with the
@@ -134,20 +159,22 @@ RUN sed -i -e 's#libssl1.0.0 | libssl1.0.2 | libssl1.1, #libssl1.0.2, #' package
 RUN echo -n 'libqt5webchannel5, libqt5webkit5, libqt5positioning5, libqt5sensors5, libqt5svg5, libqt5xml5, libqt5xmlpatterns5, ' > /tmp/x.qt_deps
 #--- begin buster
 RUN set -x; \
-    if [ "${DEBIAN_VERSION}" = 'buster' ]; then \
+    if [[ "${DEBIAN_VERSION}" == 'buster' ]]; then \
       echo -n "libqt5webengine5, libqt5webenginewidgets5, " >> /tmp/x.qt_deps; \
     fi
 #--- end buster
 #--- begin version 1.1.*
+# hadolint ignore=SC2016
 RUN set -x; \
-    if [ "${VERSION_MAJOR}.${VERSION_MINOR}" = '1.1' ]; then \
+    if [[ "${VERSION_MAJOR}.${VERSION_MINOR}" == '1.1' ]]; then \
       QT_DEPS=$(cat /tmp/x.qt_deps); \
       sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}libgstreamer0.10.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}'"${QT_DEPS}"'")#' package/linux/CMakeLists.txt; \
     fi
 #--- end version 1.1.*
 #--- begin version 1.2.*
+# hadolint ignore=SC2016
 RUN set -x; \
-    if [ "${VERSION_MAJOR}.${VERSION_MINOR}" = '1.2' ]; then \
+    if [[ "${VERSION_MAJOR}.${VERSION_MINOR}" == '1.2' ]]; then \
       QT_DEPS=$(cat /tmp/x.qt_deps); \
       sed -i -e 's#\(^.*set(RSTUDIO_DEBIAN_DEPENDS "libedit2,.*$\)#\1\nset(RSTUDIO_DEBIAN_DEPENDS "${RSTUDIO_DEBIAN_DEPENDS}'"${QT_DEPS}"'")#' package/linux/CMakeLists.txt; \
     fi
@@ -156,9 +183,11 @@ RUN set -x; \
 # Move package recommendation for r-base to package dependency. It makes
 # little sense to install without r-base since neither server nor desktop
 # can even start without having R installed.
+# hadolint ignore=SC2016
 RUN sed -i -e 's#set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "\(r-base.*$\)#set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, \1#' package/linux/CMakeLists.txt
 
 # Add our own package release (aka. Debian revision number) to the .deb file.
+# hadolint ignore=SC2016
 RUN sed -i -e 's#\(^.*\)-\(${PACKAGE_ARCHITECTURE}\)#set(CPACK_DEBIAN_PACKAGE_RELEASE "'${PACKAGE_RELEASE}'")\n\1-${CPACK_DEBIAN_PACKAGE_RELEASE}_\2#' package/linux/CMakeLists.txt
 
 # If we don't have a lot of RAM on the host enact restritions on GWT:
@@ -166,9 +195,10 @@ RUN sed -i -e 's#\(^.*\)-\(${PACKAGE_ARCHITECTURE}\)#set(CPACK_DEBIAN_PACKAGE_RE
 #   running multiple workers is getting too tight with 1 GB RAM + 1 GB swap.
 # * Reduce heap size to 600 MB to avoid vitual memory thrashing on our 1 GB RAM
 #   RPi3. Below 600 MB we'd run the jvm out of heap space.
+# hadolint ignore=DL3001
 RUN set -x; \
     RAM_MB=$(free -m | awk '/Mem:/ {print $2}'); \
-    if [ "${RAM_MB}" -lt '3500' ]; then \
+    if [[ "${RAM_MB}" -lt '3500' ]]; then \
       perl -0777 -i -pe 's#(<arg value="-localWorkers"/>\s+<arg value=)"\d+"(/>)#\1"1"\2#s' src/gwt/build.xml; \
       perl -i -pe 's#-Xmx1536#-Xmx600#' src/gwt/build.xml; \
     fi

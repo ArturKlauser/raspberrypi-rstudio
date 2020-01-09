@@ -31,15 +31,24 @@ repos:
 
 -   repo: local
     hooks:
+        # Checks shell scripts.
     -   id: shellcheck
         name: shellcheck
         language: docker_image
-        entry: koalaman/shellcheck:stable
+        entry: koalaman/shellcheck:v0.7.0
         args: [-xa]
         types: [shell]
+        # Autoformats shell scripts.
     -   id: shfmt
         name: shfmt
         language: docker_image
         entry: mvdan/shfmt:v3.0.0
         args: [-ln=bash, -i, '2', -bn, -ci, -sr, -w]
         types: [shell]
+        # Checks Dockerfiles.
+    -   id: hadolint
+        name: hadolint
+        language: docker_image
+        entry: hadolint/hadolint:v1.17.4
+        args: [hadolint]
+        types: [dockerfile]

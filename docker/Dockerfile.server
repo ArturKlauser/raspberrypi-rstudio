@@ -34,14 +34,16 @@ ARG DEBIAN_VERSION
 ARG VERSION_TAG
 
 # Import image containing the built .deb package.
-FROM arturklauser/raspberrypi-rstudio-server-deb:${VERSION_TAG}-${DEBIAN_VERSION} as build
+FROM arturklauser/raspberrypi-rstudio-server-deb:${VERSION_TAG}-${DEBIAN_VERSION} AS build
 
 #===== Build stage: install-minimal. =====
 
 ARG DEBIAN_VERSION
 
 # See https://www.balena.io/docs/reference/base-images/base-images/
-FROM balenalib/raspberrypi3-debian:${DEBIAN_VERSION}-run as install-minimal
+FROM balenalib/raspberrypi3-debian:${DEBIAN_VERSION}-run AS install-minimal
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Balenalib images for arm can be cross-built on x86.
 # Comment out next line for native build.
@@ -65,32 +67,36 @@ COPY --from=build /rstudio-server-${BUILD_TAG}_armhf.deb .
 # /etc/ssl/certs, causing SSL (e.g. curl https://...) to fail. Repopulate those
 # symlinks.
 RUN set -x; \
-    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
+    if [[ "${DEBIAN_VERSION}" =~ (buster|bullseye) ]]; then \
       update-ca-certificates --fresh; \
     fi
 #--- end buster or bullseye
 
 # Upgrade base image.
+# hadolint ignore=DL3005
 RUN set -x \
     && apt-get update \
     && apt-get --with-new-pkgs upgrade -y \
-    && apt autoremove \
-    && apt-get clean
+    && apt-get autoremove \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # User and password for rstudio-server web login.
 ARG USER=rstudio
 ARG PASSWORD=raspberry
 
 # Install R, RStudio, and basic dependencies.
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
     && apt-get update \
     && apt-get install -y r-base locales \
     # Create the locale definition files we want to use.
     && localedef -f UTF-8 -i en_US en_US.UTF-8 \
-    && apt install ./rstudio-server-${BUILD_TAG}_armhf.deb \
+    && apt-get install -y "./rstudio-server-${BUILD_TAG}_armhf.deb" \
     && apt-get clean \
-    && rm ./rstudio-server-${BUILD_TAG}_armhf.deb \
-    && useradd -m -p $(perl -e "print crypt('"${PASSWORD}"','pi');") ${USER}
+    && rm -rf /var/lib/apt/lists/* \
+    && rm "./rstudio-server-${BUILD_TAG}_armhf.deb" \
+    && useradd -m -p "$(perl -e "print crypt('${PASSWORD}','pi');")" "${USER}"
 
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8
@@ -99,14 +105,22 @@ ENV LANG=en_US.UTF-8 \
 EXPOSE 8787
 
 # The docker image just starts the server daemon and waits forever.
-CMD rstudio-server start; while true; do sleep 10000; done
+RUN set -x \
+   && runfile='/bin/run-rstudio-server' \
+   && (echo "#!/bin/bash"; \
+       echo "rstudio-server start; while true; do sleep 10000; done") \
+       > "${runfile}" \
+  && chmod 755 "${runfile}"
+CMD ["/bin/run-rstudio-server"]
 
 # Comment out next line for native build.
 RUN [ "cross-build-end" ]
 
 #===== Build stage: install-full. =====
 
-FROM install-minimal as install-full
+FROM install-minimal AS install-full
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DEBIAN_VERSION
 ARG BUILD_PARALLELISM=1
@@ -124,6 +138,7 @@ RUN [ "cross-build-start" ]
 #   * data cleaning and plotting (tydir, ggplot, etc.)
 
 # Install packages for C, C++, Fortran build environments.
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
     && apt-get update \
     && apt-get install -y \
@@ -131,38 +146,44 @@ RUN set -x \
        gfortran \
        libblas-dev \
        pkg-config \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install compiler CRAN package for install.packages() below.
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
     && apt-get update \
     && apt-get install -y \
        r-cran-rcpp \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # When building packages from source with install.packages(), use build
 # parallelism.
 RUN echo "options(Ncpus = ${BUILD_PARALLELISM})" > ~/.Rprofile
 
 # Install basic packages for .Rmd file handling.
+# hadolint ignore=DL3008,DL3015
 RUN set -x; \
     #--- begin stretch
-    if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
+    if [[ "${DEBIAN_VERSION}" == 'stretch' ]]; then \
       Rscript -e 'install.packages(c("rmarkdown", "rprojroot"), \
                                    repos="http://cran.rstudio.com")'; \
     fi; \
     #--- end stretch
     #--- begin buster or bullseye
-    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
+    if [[ "${DEBIAN_VERSION}" =~ (buster|bullseye) ]]; then \
       apt-get update \
       && apt-get install -y \
          r-cran-rmarkdown \
          r-cran-rprojroot \
-      && apt-get clean; \
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*; \
     fi
     #--- end buster or bullseye
 
 # Install packages for knitting to PDF.
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
     && apt-get update \
     && apt-get install -y \
@@ -175,12 +196,14 @@ RUN set -x \
        texlive-generic-extra \
        texlive-fonts-recommended \
        lmodern \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install tidyverse packages for data cleaning, manipulation, and plotting.
+# hadolint ignore=DL3008,DL3015
 RUN set -x; \
     #--- begin stretch
-    if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
+    if [[ "${DEBIAN_VERSION}" == 'stretch' ]]; then \
       apt-get update \
       && apt-get install -y \
          zlib1g-dev \
@@ -199,23 +222,26 @@ RUN set -x; \
          r-cran-xml2 \
       && Rscript -e 'install.packages(c("tidyverse"), \
                                       repos="http://cran.rstudio.com")' \
-      && apt-get clean; \
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*; \
     fi; \
     #--- end stretch
     #--- begin buster or bullseye
-    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
+    if [[ "${DEBIAN_VERSION}" =~ (buster|bullseye) ]]; then \
       apt-get update \
       && apt-get install -y \
          zlib1g-dev \
          r-cran-tidyverse \
-      && apt-get clean; \
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*; \
     fi
     #--- end buster or bullseye
 
 # Install support for File->New File for Stan, D3, SQL, python, plumber, etc.
+# hadolint ignore=DL3008,DL3015
 RUN set -x; \
     #--- begin buster or bullseye
-    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
+    if [[ "${DEBIAN_VERSION}" =~ (buster|bullseye) ]]; then \
       apt-get update \
       && apt-get install -y \
          r-cran-rstan \
@@ -225,14 +251,16 @@ RUN set -x; \
          r-cran-plumber \
       && Rscript -e 'install.packages(c("r2d3"), \
                                       repos="http://cran.rstudio.com")' \
-      && apt-get clean; \
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*; \
     fi
     #--- end buster or bullseye
 
 # Install devtools for RStudio "New Project -> R package using devtools"
+# hadolint ignore=DL3008,DL3015
 RUN set -x; \
     #--- begin stretch
-    if [ "${DEBIAN_VERSION}" = 'stretch' ]; then \
+    if [[ "${DEBIAN_VERSION}" == 'stretch' ]]; then \
       apt-get update \
       && apt-get install -y \
          libgit2-dev \
@@ -249,26 +277,30 @@ RUN set -x; \
          zlib1g-dev \
       && Rscript -e 'install.packages(c("devtools"), \
                                       repos="http://cran.rstudio.com")' \
-      && apt-get clean; \
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*; \
     fi; \
     #--- end stretch
     #--- begin buster or bullseye
-    if [ "${DEBIAN_VERSION}" = 'buster' -o "${DEBIAN_VERSION}" = 'bullseye' ]; then \
+    if [[ "${DEBIAN_VERSION}" =~ (buster|bullseye) ]]; then \
       apt-get update \
       && apt-get install -y \
          r-cran-devtools \
-      && apt-get clean; \
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*; \
     fi
     #--- end buster or bullseye
 
 # Install packages for source code management (available from RStudio menus).
+# hadolint ignore=DL3008,DL3015
 RUN set -x \
     && apt-get update \
     # misc libraries for R packages
     && apt-get install -y libcurl4-openssl-dev \
     # packages for RStudio project version control
     && apt-get install -y --install-recommends git subversion \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Comment out next line for native build.
 RUN [ "cross-build-end" ]
