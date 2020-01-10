@@ -54,7 +54,31 @@ ENV RSTUDIO_VERSION_MAJOR=${VERSION_MAJOR} \
     RSTUDIO_VERSION_MINOR=${VERSION_MINOR} \
     RSTUDIO_VERSION_PATCH=${VERSION_PATCH}
 
-# Build everything.
+# Adapt to host resource constraints.
+# hadolint ignore=DL3001
+RUN set -x \
+    # If we don't have a lot of RAM on the host enact restritions on GWT:
+    # * Constrain gwtc compiler to use a single worker - gwtc is a memory
+    #   hog and running multiple workers is getting too tight with 1 GB RAM
+    #   + 1 GB swap.
+    # * Reduce heap size to 600 MB to avoid vitual memory thrashing on our 1
+    #   GB RAM RPi3. Below 600 MB we'd run the jvm out of heap space.
+    && build_xml='../src/gwt/build.xml' \
+    && ram_mb=$(free -m | awk '/Mem:/ {print $2}') \
+    && if [[ "${ram_mb}" -lt '3500' ]]; then \
+        perl -0777 -i -pe \
+          's#(<arg value="-localWorkers"/>\s+<arg value=)"\d+"(/>)#\1"1"\2#s' \
+          "$build_xml"; \
+        perl -i -pe 's#-Xmx1536#-Xmx600#' "$build_xml"; \
+      fi \
+    # Travis: Make sure gwt spews output frequently enough for Travis not to
+    # declare the build dead and error out the job.
+    && if [[ "$TRAVIS" == 'true' ]]; then \
+         loglevel='<arg value="-logLevel"/>\n<arg value="TRACE"/>\n'; \
+         perl -i -pe "s#(.*-localWorkers.*)#$loglevel"'\1#' "$build_xml"; \
+       fi
+
+# Configure the build.
 RUN set -x \
     # Set up boost dependency.
     && case $(echo ${VERSION_TAG} | cut -c1-3) in \
@@ -65,38 +89,30 @@ RUN set -x \
          'stretch') BOOST="${BOOST}=1.62.0" ;; \
          'buster' | 'bullseye') BOOST="${BOOST}=1.67.0" ;; \
        esac \
-    # Travis: Make sure gwt spews output frequently enough for Travis not to
-    # declare the build dead and error out the job.
-    && if [[ "$TRAVIS" == 'true' ]]; then \
-         build_xml='../src/gwt/build.xml'; \
-         loglevel='<arg value="-logLevel"/>\n<arg value="TRACE"/>\n'; \
-         perl -i -pe "s#(.*-localWorkers.*)#$loglevel\1#" "$build_xml"; \
-         cat "$build_xml"; \
-       fi \
-    # Configure the build.
     && cmake .. \
        -DRSTUDIO_TARGET=Server \
        -DCMAKE_BUILD_TYPE=Release \
        -DRSTUDIO_PACKAGE_BUILD=1 \
        ${BOOST} \
-       -DRSTUDIO_USE_SYSTEM_BOOST=1 \
-    # Compile the C++ targets.
-    && make -j${BUILD_PARALLELISM} \
-       rstudio-core \
-       rstudio-core-hunspell \
-       rstudio-core-synctex \
-       rstudio-monitor \
-       rstudio-r \
-       rsession \
-       rstudio-session-workers \
-       rpostback \
-       rserver \
-       rserver-pam \
-    # Compile the rest, in particular java gwt_build.
-    && make -j${BUILD_PARALLELISM} preinstall \
-       # Travis: Prune some of the gwt spew again. Too much output can cause a
-       # log overflow and error out the job.
-       2>&1 | grep -v '^[[:space:]]*\[java\][[:space:]]+(Found|Resolving)'
+       -DRSTUDIO_USE_SYSTEM_BOOST=1
+
+# Compile the C++ targets.
+RUN make -j${BUILD_PARALLELISM} rstudio-core
+RUN make -j${BUILD_PARALLELISM} rstudio-core-hunspell
+RUN make -j${BUILD_PARALLELISM} rstudio-core-synctex
+RUN make -j${BUILD_PARALLELISM} rstudio-monitor
+RUN make -j${BUILD_PARALLELISM} rstudio-r
+RUN make -j${BUILD_PARALLELISM} rsession
+RUN make -j${BUILD_PARALLELISM} rstudio-session-workers
+RUN make -j${BUILD_PARALLELISM} rpostback
+RUN make -j${BUILD_PARALLELISM} rserver
+RUN make -j${BUILD_PARALLELISM} rserver-pam
+
+# Compile the rest, in particular java gwt_build.
+RUN make -j${BUILD_PARALLELISM} preinstall \
+    # Travis: Prune some of the gwt spew again. Too much output can cause a
+    # log overflow and error out the job.
+    | grep -v '^[[:space:]]*\[java\][[:space:]]*\(Found\|Resolving\|Preparing method\|Adding image\)'
 
 # Create the deb package. Unfortunately cpack wants to rerun the whole build,
 # so we'll work around that by giving it an empty build rule.

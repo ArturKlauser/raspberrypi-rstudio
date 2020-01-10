@@ -190,19 +190,6 @@ RUN sed -i -e 's#set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "\(r-base.*$\)#set(CPACK_DE
 # hadolint ignore=SC2016
 RUN sed -i -e 's#\(^.*\)-\(${PACKAGE_ARCHITECTURE}\)#set(CPACK_DEBIAN_PACKAGE_RELEASE "'${PACKAGE_RELEASE}'")\n\1-${CPACK_DEBIAN_PACKAGE_RELEASE}_\2#' package/linux/CMakeLists.txt
 
-# If we don't have a lot of RAM on the host enact restritions on GWT:
-# * Constrain gwtc compiler to use a single worker - gwtc is a memory hog and
-#   running multiple workers is getting too tight with 1 GB RAM + 1 GB swap.
-# * Reduce heap size to 600 MB to avoid vitual memory thrashing on our 1 GB RAM
-#   RPi3. Below 600 MB we'd run the jvm out of heap space.
-# hadolint ignore=DL3001
-RUN set -x; \
-    RAM_MB=$(free -m | awk '/Mem:/ {print $2}'); \
-    if [[ "${RAM_MB}" -lt '3500' ]]; then \
-      perl -0777 -i -pe 's#(<arg value="-localWorkers"/>\s+<arg value=)"\d+"(/>)#\1"1"\2#s' src/gwt/build.xml; \
-      perl -i -pe 's#-Xmx1536#-Xmx600#' src/gwt/build.xml; \
-    fi
-
 #--- begin stretch
 # Change "cmake_policy(SET CMP0020 OLD)" to "cmake_policy(SET CMP0043 OLD)"
 # to avoid a build time complaint.
