@@ -1,9 +1,10 @@
+# The following environment variables need to be defined in the Travis UI:
+#   DOCKERHUB_USER ....... for deploying docker images to DockerHub
+#   DOCKERHUB_PASSWORD ... (secret) for deploying docker images to DockerHub
+#   GITHUB_TOKEN ......... (secret) for creating a GitHub Release
 os: linux
 dist: xenial  # Ubuntu: 16.04 (xenial), 18.04 (bionic)
-arch: arm64
 language: shell
-# This build is expensive O(hours). Only run on dedicated deployment branch.
-if: branch = deploy
 services: docker
 git:
   depth: 1
@@ -13,7 +14,14 @@ jobs:
     # Build instructions for one stage (= docker build), one Debian version.
     - &build-env
       stage: build-env
+      # This build is expensive O(hours).
+      # Only run on dedicated deployment branch.
+      if: branch = deploy
+      arch: arm64
       env: debian_version=stretch
+      before_install: &env_setup
+        - export GITHUB_REPO="${TRAVIS_REPO_SLUG/*\//}"
+        - export GITHUB_USER="${TRAVIS_REPO_SLUG/\/*/}"
       # We use before_script instead of script because we want to error out at
       # the first sign of trouble.
       before_script:
@@ -65,3 +73,15 @@ jobs:
       env: debian_version=buster
     - <<: *desktop-deb
       env: debian_version=bullseye
+
+    - stage: Create GitHub Release
+      if: tag IS NOT blank
+      arch: amd64  # This can run on a regular x86 host.
+      before_install: *env_setup
+      install: |
+        # Install GitHub API script.
+        bash -ec "source ./build-functions.sh; install_github_api"
+      script: |
+        # Create a new draft release.
+        bash -ec "source ./build-functions.sh; \
+                  create_github_release $TRAVIS_TAG stretch buster bullseye"
