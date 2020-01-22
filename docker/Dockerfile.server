@@ -193,9 +193,10 @@ RUN set -x \
        pandoc \
        pandoc-citeproc \
        texlive-latex-extra \
-       texlive-generic-extra \
        texlive-fonts-recommended \
        lmodern \
+    # bullseye provisional balenalib image doesn't have this; don't fail
+    && (apt-get install -y texlive-generic-extra || true) \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

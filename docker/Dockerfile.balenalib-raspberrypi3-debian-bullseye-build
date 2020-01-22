@@ -1,8 +1,8 @@
 # Use this Dockerfile to build a Debian 11 (Bullseye) version of balenalib while
 # there is no such version yet officially.
 #
-# from https://github.com/balena-io-library/base-images/blob/master/balena-base-images/device-base/raspberrypi3/debian/sid/build/Dockerfile
-FROM balenalib/armv7hf-debian:sid-build
+# from https://github.com/balena-io-library/base-images/blob/master/balena-base-images/device-base/raspberrypi3/debian/bullseye/build/Dockerfile
+FROM balenalib/armv7hf-debian:bullseye-build
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 LABEL io.balena.device-type="raspberrypi3"
 RUN echo "deb http://archive.raspbian.org/raspbian bullseye main contrib non-free rpi firmware" >>  /etc/apt/sources.list \

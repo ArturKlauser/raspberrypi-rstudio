@@ -75,11 +75,12 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/*
 
 # Install openjdk-8-jdk.
-# Buster version crashes on AWS EC2 ARM instances and QMU emulator on x86, so we
-# source the version from the stretch package depo instead, which works fine.
+# Buster/bullseye version crashes on AWS EC2 ARM instances and QMU emulator on
+# x86, so we source the version from the stretch package depo instead, which
+# works fine.
 # hadolint ignore=DL3008,DL3015
 RUN set -x; \
-    if [[ "${DEBIAN_VERSION}" == 'buster' ]]; then \
+    if [[ "${DEBIAN_VERSION}" =~ (buster|bullseye)  ]]; then \
       echo "deb http://archive.raspbian.org/raspbian stretch main" > /etc/apt/sources.list.d/raspbian-stretch.list; \
     fi \
     && apt-get update \
