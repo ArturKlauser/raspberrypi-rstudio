@@ -26,14 +26,6 @@ jobs:
       # the first sign of trouble.
       before_script:
         - stage="$(echo ${TRAVIS_BUILD_STAGE_NAME} | tr '[A-Z]' '[a-z]')"
-        - |
-          if [[ "${debian_version}" == 'bullseye' ]]; then
-            if [[ "${stage}" == 'build-env' ]]; then
-              bash -ec "./balenalib-bullseye-build.sh build"
-            elif [[ "${stage}" == 'server' ]]; then
-              bash -ec "./balenalib-bullseye-build.sh run"
-            fi
-          fi
         # For some reason executing a function with 'set -e; f' hangs Travis
         # on error in the function, whereas 'bash -ec f' errors the build as
         # expected.

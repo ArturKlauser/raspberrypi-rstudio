@@ -19,7 +19,7 @@ function usage() {
 Usage: $script_name <debian-version> <stage>
          debian-version: stretch ..... Debian version 9
                          buster ...... Debian version 10
-                         bullseye .... Debian version 11 (experimental)
+                         bullseye .... Debian version 11
          stage: build-env ......... create build environment
                 server-deb ........ build server Debian package
                 desktop-deb ....... build desktop Debian package
@@ -131,12 +131,6 @@ EOF
   else
     readonly CROSS_BUILD_FIX=''
   fi
-  if [[ "${DEBIAN_VERSION}" == 'bullseye' ]]; then
-    # shellcheck disable=SC2016
-    readonly BULLSEYE_FIX='s#(balenalib)/(raspberrypi3)#$1-$2#'
-  else
-    readonly BULLSEYE_FIX=''
-  fi
 
   # Build the docker image.
   (for i in {0..100}; do
@@ -150,7 +144,6 @@ EOF
   set -x
   time \
     perl -pe "${CROSS_BUILD_FIX}" "${DOCKERFILE}" \
-    | perl -pe "${BULLSEYE_FIX}" \
     | docker build \
       --build-arg DEBIAN_VERSION="${DEBIAN_VERSION}" \
       --build-arg VERSION_TAG="${VERSION_TAG}" \
@@ -164,6 +157,7 @@ EOF
       --build-arg BUILD_DATE="$(timestamp)" \
       -t "${IMAGE_NAME}:${VERSION_TAG}-${DEBIAN_VERSION}" \
       -
+
   set +x
   kill $pid
 

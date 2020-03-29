@@ -195,8 +195,12 @@ RUN set -x \
        texlive-latex-extra \
        texlive-fonts-recommended \
        lmodern \
-    # bullseye provisional balenalib image doesn't have this; don't fail
-    && (apt-get install -y texlive-generic-extra || true) \
+    #--- begin not bullseye
+    && if [[ "${DEBIAN_VERSION}" != 'bullseye' ]]; then \
+      # bullseye balenalib image doesn't have this; don't fail
+      apt-get install -y texlive-generic-extra; \
+    fi \
+    #--- end not bullseye
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -67,8 +67,8 @@ function main() {
 
   rm -f "${log}"
   run ./build-all.sh
-  # expected: like above + 2 balenalib bullseye pre-builds
-  check_num_lines './build-all.sh' 'would execute: docker build ' 14
+  # expected: same as above
+  check_num_lines './build-all.sh' 'would execute: docker build ' 12
   check_num_lines './build-all.sh' 'would execute: docker push ' 12
 
   teardown

@@ -9,6 +9,7 @@
 
 # Account name prefix for docker image tags.
 readonly DOCKERHUB_USER='arturklauser'
+readonly GITHUB_REPO='raspberrypi-rstudio'
 
 source ./build-functions.sh
 
@@ -17,11 +18,6 @@ function main() {
     # Throw out unreferenced junk from Docker.
     docker container prune --force
     docker image prune --force
-
-    # Build our own bullseye starting image since there ain't any yet.
-    if [[ "${debian_version}" == 'bullseye' ]]; then
-      ./balenalib-bullseye-build.sh
-    fi
 
     build 'build-env'
     (# handle docker in background

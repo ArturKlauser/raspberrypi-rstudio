@@ -19,7 +19,7 @@ function usage() {
 Usage: $script_name <debian-version> <stage>
          debian-version: stretch ..... Debian version 9
                          buster ...... Debian version 10
-                         bullseye .... Debian version 11 (experimental)
+                         bullseye .... Debian version 11
          stage: build-env ......... create build environment
                 server-deb ........ build server Debian package
                 desktop-deb ....... build desktop Debian package
@@ -114,7 +114,13 @@ EOF
 
   # Parallelism is no greater than number of available CPUs and max 2.
   readonly NPROC=$(nproc 2> /dev/null)
-  readonly BUILD_PARALLELISM=$(min '2' "${NPROC}")
+  # Travis: There is a 50 minute job time limit. The aarch64 VM has 32 CPUs.
+  # Make use of them to stay within the job time limit.
+  if [ "$TRAVIS" = 'true' ]; then
+    readonly BUILD_PARALLELISM=$(min '8' "${NPROC}")
+  else
+    readonly BUILD_PARALLELISM=$(min '2' "${NPROC}")
+  fi
 
   # If we're running on real or simulated ARM we comment out the cross-build
   # lines.
@@ -125,20 +131,21 @@ EOF
   else
     readonly CROSS_BUILD_FIX=''
   fi
-  if [[ "${DEBIAN_VERSION}" == 'bullseye' ]]; then
-    # shellcheck disable=SC2016
-    readonly BULLSEYE_FIX='s#(balenalib)/(raspberrypi3)#$1-$2#'
-  else
-    readonly BULLSEYE_FIX=''
-  fi
 
   # Build the docker image.
   #      --load \
 
+  (for i in {0..100}; do
+    sleep 1
+    echo "Still building ... ($i min)"
+    sleep 59
+  done) &
+  pid=$!
+  # Get current commit SHA. Works also on --depth=1 shallow clones.
+  ref="$(git log --pretty=format:'%H' HEAD^!)"
   set -x
   time \
     perl -pe "${CROSS_BUILD_FIX}" "${DOCKERFILE}" \
-    | perl -pe "${BULLSEYE_FIX}" \
     | perl -pe 's#^(FROM '"${DOCKERHUB_USER}"'/\S+)#$1-buildx#' \
     | docker buildx build \
       --platform linux/arm/v7 \
@@ -151,11 +158,14 @@ EOF
       --build-arg VERSION_PATCH="${VERSION_PATCH}" \
       --build-arg PACKAGE_RELEASE="${PACKAGE_RELEASE}" \
       --build-arg BUILD_PARALLELISM="${BUILD_PARALLELISM}" \
-      --build-arg VCS_REF="$(git log --pretty=format:'%H' HEAD~..HEAD)" \
+      --build-arg TRAVIS="${TRAVIS}" \
+      --build-arg VCS_REF="${ref}" \
       --build-arg BUILD_DATE="$(timestamp)" \
       -t "${IMAGE_NAME}:${VERSION_TAG}-${DEBIAN_VERSION}-buildx" \
       -
+
   set +x
+  kill $pid
 
   echo "Done building at $(timestamp)"
 }
