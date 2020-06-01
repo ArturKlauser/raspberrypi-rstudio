@@ -4,7 +4,7 @@ default_language_version:
     python: python3.7
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.4.0
+    rev: v3.1.0
     hooks:
     #-- Generic checks.
         # Check for files that would conflict in case-insensitive filesystems.
@@ -35,20 +35,20 @@ repos:
     -   id: shellcheck
         name: shellcheck
         language: docker_image
-        entry: koalaman/shellcheck:v0.7.0
+        entry: koalaman/shellcheck:v0.7.1
         args: [-xa]
         types: [shell]
         # Autoformats shell scripts.
     -   id: shfmt
         name: shfmt
         language: docker_image
-        entry: mvdan/shfmt:v3.0.0
+        entry: mvdan/shfmt:v3.1.1
         args: [-ln=bash, -i, '2', -bn, -ci, -sr, -w]
         types: [shell]
         # Checks Dockerfiles.
     -   id: hadolint
         name: hadolint
         language: docker_image
-        entry: hadolint/hadolint:v1.17.4
+        entry: hadolint/hadolint:v1.17.6
         args: [hadolint]
         types: [dockerfile]
