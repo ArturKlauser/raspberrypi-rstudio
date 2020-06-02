@@ -39,9 +39,9 @@ jobs:
         # For some reason executing a function with 'set -e; f' hangs Travis
         # on error in the function, whereas 'bash -ec f' errors the build as
         # expected.
-#        - bash -ec "source ./build-functions.sh; build ${stage}"
-#        - docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASSWORD"
-#        - bash -ec "source ./build-functions.sh; push ${stage}"
+        - bash -ec "source ./build-functions.sh; build ${stage}"
+        - docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASSWORD"
+        - bash -ec "source ./build-functions.sh; push ${stage}"
 #    # Do the same (in parallel) for other Debian versions.
 #    - <<: *build-env
 #      env: debian_version=buster
