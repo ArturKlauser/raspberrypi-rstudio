@@ -25,15 +25,15 @@ jobs:
       # We use before_script instead of script because we want to error out at
       # the first sign of trouble.
       before_script:
-        - echo "/etc/hostname: begin"
-        - echo cat /etc/hostname
-        - echo "/etc/hostname: end"
-        - echo "hostname: begin"
-        - echo hostname
-        - echo "hostname: end"
-        - echo "/etc/hosts: begin"
-        - echo cat /etc/hosts
-        - echo "/etc/hosts: end"
+        - echo "/etc/hostname begin"
+        - cat /etc/hostname
+        - echo "/etc/hostname end"
+        - echo "hostname begin"
+        - hostname
+        - echo "hostname end"
+        - echo "/etc/hosts begin"
+        - cat /etc/hosts
+        - echo "/etc/hosts end"
         - stage="$(echo ${TRAVIS_BUILD_STAGE_NAME} | tr '[A-Z]' '[a-z]')"
         # For some reason executing a function with 'set -e; f' hangs Travis
         # on error in the function, whereas 'bash -ec f' errors the build as
