@@ -3,7 +3,7 @@
 #   DOCKERHUB_PASSWORD ... (secret) for deploying docker images to DockerHub
 #   GITHUB_TOKEN ......... (secret) for creating a GitHub Release
 os: linux
-dist: xenial  # Ubuntu: 16.04 (xenial), 18.04 (bionic)
+dist: bionic  # Ubuntu: 16.04 (xenial), 18.04 (bionic)
 language: shell
 services: docker
 git:
