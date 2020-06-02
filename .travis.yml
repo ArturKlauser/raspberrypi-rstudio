@@ -27,6 +27,7 @@ jobs:
       before_script:
         - echo "/etc/hostname begin"
         - cat /etc/hostname
+        - od -a /etc/hostname
         - echo "/etc/hostname end"
         - echo "hostname begin"
         - hostname
