@@ -20,6 +20,11 @@ jobs:
       arch: arm64
       env: debian_version=stretch
       before_install: &env_setup
+        - export GITHUB_REPO="${TRAVIS_REPO_SLUG/*\//}"
+        - export GITHUB_USER="${TRAVIS_REPO_SLUG/\/*/}"
+      # We use before_script instead of script because we want to error out at
+      # the first sign of trouble.
+      before_script:
         - echo "/etc/hostname: begin"
         - echo cat /etc/hostname
         - echo "/etc/hostname: end"
@@ -29,18 +34,13 @@ jobs:
         - echo "/etc/hosts: begin"
         - echo cat /etc/hosts
         - echo "/etc/hosts: end"
-        - export GITHUB_REPO="${TRAVIS_REPO_SLUG/*\//}"
-        - export GITHUB_USER="${TRAVIS_REPO_SLUG/\/*/}"
-      # We use before_script instead of script because we want to error out at
-      # the first sign of trouble.
-      before_script:
         - stage="$(echo ${TRAVIS_BUILD_STAGE_NAME} | tr '[A-Z]' '[a-z]')"
         # For some reason executing a function with 'set -e; f' hangs Travis
         # on error in the function, whereas 'bash -ec f' errors the build as
         # expected.
-        - bash -ec "source ./build-functions.sh; build ${stage}"
-        - docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASSWORD"
-        - bash -ec "source ./build-functions.sh; push ${stage}"
+#        - bash -ec "source ./build-functions.sh; build ${stage}"
+#        - docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASSWORD"
+#        - bash -ec "source ./build-functions.sh; push ${stage}"
 #    # Do the same (in parallel) for other Debian versions.
 #    - <<: *build-env
 #      env: debian_version=buster
