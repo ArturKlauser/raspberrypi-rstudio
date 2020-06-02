@@ -20,6 +20,9 @@ jobs:
       arch: arm64
       env: debian_version=stretch
       before_install: &env_setup
+        - echo "/etc/hostname: $(cat /etc/hostname)"
+        - echo "hostname: $(hostname)"
+        - echo "/etc/hosts: $(cat /etc/hosts)"
         - export GITHUB_REPO="${TRAVIS_REPO_SLUG/*\//}"
         - export GITHUB_USER="${TRAVIS_REPO_SLUG/\/*/}"
       # We use before_script instead of script because we want to error out at
@@ -32,48 +35,48 @@ jobs:
         - bash -ec "source ./build-functions.sh; build ${stage}"
         - docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASSWORD"
         - bash -ec "source ./build-functions.sh; push ${stage}"
-    # Do the same (in parallel) for other Debian versions.
-    - <<: *build-env
-      env: debian_version=buster
-    - <<: *build-env
-      env: debian_version=bullseye
-
-    # This stanza repeats for every build stage. It's rather obscure and ugly,
-    # but Travis' expressibility for job dependencies is quite limited. This is
-    # the most concise way I have found to express an approximation of the
-    # actual dependencies.
-    - &server-deb
-      <<: *build-env
-      stage: server-deb
-    - <<: *server-deb
-      env: debian_version=buster
-    - <<: *server-deb
-      env: debian_version=bullseye
-
-    - &server
-      <<: *build-env
-      stage: server
-    - <<: *server
-      env: debian_version=buster
-    - <<: *server
-      env: debian_version=bullseye
-
-    - &desktop-deb
-      <<: *build-env
-      stage: desktop-deb
-    - <<: *desktop-deb
-      env: debian_version=buster
-    - <<: *desktop-deb
-      env: debian_version=bullseye
-
-    - stage: Create GitHub Release
-      if: tag IS NOT blank
-      arch: amd64  # This can run on a regular x86 host.
-      before_install: *env_setup
-      install: |
-        # Install GitHub API script.
-        bash -ec "source ./build-functions.sh; install_github_api"
-      script: |
-        # Create a new draft release.
-        bash -ec "source ./build-functions.sh; \
-                  create_github_release $TRAVIS_TAG stretch buster bullseye"
+#    # Do the same (in parallel) for other Debian versions.
+#    - <<: *build-env
+#      env: debian_version=buster
+#    - <<: *build-env
+#      env: debian_version=bullseye
+#
+#    # This stanza repeats for every build stage. It's rather obscure and ugly,
+#    # but Travis' expressibility for job dependencies is quite limited. This is
+#    # the most concise way I have found to express an approximation of the
+#    # actual dependencies.
+#    - &server-deb
+#      <<: *build-env
+#      stage: server-deb
+#    - <<: *server-deb
+#      env: debian_version=buster
+#    - <<: *server-deb
+#      env: debian_version=bullseye
+#
+#    - &server
+#      <<: *build-env
+#      stage: server
+#    - <<: *server
+#      env: debian_version=buster
+#    - <<: *server
+#      env: debian_version=bullseye
+#
+#    - &desktop-deb
+#      <<: *build-env
+#      stage: desktop-deb
+#    - <<: *desktop-deb
+#      env: debian_version=buster
+#    - <<: *desktop-deb
+#      env: debian_version=bullseye
+#
+#    - stage: Create GitHub Release
+#      if: tag IS NOT blank
+#      arch: amd64  # This can run on a regular x86 host.
+#      before_install: *env_setup
+#      install: |
+#        # Install GitHub API script.
+#        bash -ec "source ./build-functions.sh; install_github_api"
+#      script: |
+#        # Create a new draft release.
+#        bash -ec "source ./build-functions.sh; \
+#                  create_github_release $TRAVIS_TAG stretch buster bullseye"
