@@ -20,9 +20,15 @@ jobs:
       arch: arm64
       env: debian_version=stretch
       before_install: &env_setup
-        - echo "/etc/hostname: $(cat /etc/hostname)"
-        - echo "hostname: $(hostname)"
-        - echo "/etc/hosts: $(cat /etc/hosts)"
+        - echo "/etc/hostname: begin"
+        - echo cat /etc/hostname
+        - echo "/etc/hostname: end"
+        - echo "hostname: begin"
+        - echo hostname
+        - echo "hostname: end"
+        - echo "/etc/hosts: begin"
+        - echo cat /etc/hosts
+        - echo "/etc/hosts: end"
         - export GITHUB_REPO="${TRAVIS_REPO_SLUG/*\//}"
         - export GITHUB_USER="${TRAVIS_REPO_SLUG/\/*/}"
       # We use before_script instead of script because we want to error out at
